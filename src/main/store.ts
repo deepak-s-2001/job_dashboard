@@ -1,5 +1,13 @@
 import { app } from 'electron'
-import { mkdirSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs'
 import { join } from 'node:path'
 import type {
   Application,
@@ -40,7 +48,39 @@ export function dbPath(): string {
   return join(dataDir(), 'db.json')
 }
 
+export function backupsDir(): string {
+  const dir = join(dataDir(), 'backups')
+  mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+const KEEP_BACKUPS = 20
+
+/** Snapshot db.json on launch (once per calendar day + on every version change),
+ *  keeping the most recent KEEP_BACKUPS. Cheap insurance against a bad write or
+ *  an accidental data-folder wipe. */
+function snapshot(): void {
+  const src = dbPath()
+  if (!existsSync(src)) return
+  try {
+    const stamp = new Date().toISOString().slice(0, 10)
+    const dest = join(backupsDir(), `db-${stamp}.json`)
+    if (!existsSync(dest) || statSync(dest).mtimeMs < statSync(src).mtimeMs - 60_000) {
+      copyFileSync(src, dest)
+    }
+    const files = readdirSync(backupsDir())
+      .filter((f) => /^db-.*\.json$/.test(f))
+      .sort()
+    for (const f of files.slice(0, Math.max(0, files.length - KEEP_BACKUPS))) {
+      rmSync(join(backupsDir(), f), { force: true })
+    }
+  } catch {
+    /* backups are best-effort, never block startup */
+  }
+}
+
 export async function initStore(): Promise<void> {
+  snapshot()
   db = JsonDb.open<DBShape>(dbPath(), defaultData)
   // shallow migration guard for future versions
   db.data.version = DB_VERSION
@@ -53,6 +93,54 @@ export async function initStore(): Promise<void> {
 
 export async function shutdownStore(): Promise<void> {
   if (db) await db.flushNow()
+}
+
+export interface BackupInfo {
+  name: string
+  savedAt: string
+  applications: number
+}
+
+export function listBackups(): BackupInfo[] {
+  try {
+    return readdirSync(backupsDir())
+      .filter((f) => /^db-.*\.json$/.test(f))
+      .sort()
+      .reverse()
+      .map((name) => {
+        const p = join(backupsDir(), name)
+        let applications = 0
+        try {
+          applications = (JSON.parse(readFileSync(p, 'utf8')) as DBShape)
+            .applications.length
+        } catch {
+          /* ignore */
+        }
+        return { name, savedAt: statSync(p).mtime.toISOString(), applications }
+      })
+  } catch {
+    return []
+  }
+}
+
+export async function restoreBackup(name: string): Promise<number> {
+  if (!/^db-[\w-]+\.json$/.test(name)) throw new Error('Bad backup name.')
+  const src = join(backupsDir(), name)
+  if (!existsSync(src)) throw new Error('That backup is gone.')
+  // safety copy of the current state before we overwrite it
+  try {
+    copyFileSync(dbPath(), join(backupsDir(), `db-before-restore-${Date.now()}.json`))
+  } catch {
+    /* ignore */
+  }
+  const restored = JSON.parse(readFileSync(src, 'utf8')) as DBShape
+  db.data.version = DB_VERSION
+  db.data.applications = restored.applications ?? []
+  db.data.tags = restored.tags ?? []
+  db.data.usage = restored.usage ?? db.data.usage
+  db.data.settings = restored.settings ?? db.data.settings
+  await db.flushNow()
+  return db.data.applications.length
 }
 
 function nowIso(): string {

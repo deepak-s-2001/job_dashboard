@@ -34,6 +34,8 @@ export const IPC = {
   linkedinLogin: 'linkedin:login',
   openDataFolder: 'data:openFolder',
   exportAll: 'data:exportAll',
+  backupsList: 'data:backupsList',
+  backupRestore: 'data:backupRestore',
   appVersion: 'app:version',
 } as const
 

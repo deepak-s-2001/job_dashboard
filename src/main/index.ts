@@ -1,8 +1,22 @@
 import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { initStore, shutdownStore } from './store'
 import { registerIpc } from './ipc'
 import { scrapeUrl } from './scraper'
+
+// --- data location safety -------------------------------------------------
+// Real user data lives in the default userData dir and MUST NOT be touched by
+// tests. A screenshot / scrape smoke run, or an explicit override, is sent to a
+// throwaway directory so a developer can never clobber real applications.
+const dataOverride =
+  process.env['JOBDASH_DATA_DIR'] ||
+  (process.env['SMOKE'] || process.env['SMOKE_SCRAPE']
+    ? join(tmpdir(), 'job-dashboard-smoke')
+    : '')
+if (dataOverride) {
+  app.setPath('userData', dataOverride)
+}
 
 function buildMenu(): void {
   const isMac = process.platform === 'darwin'

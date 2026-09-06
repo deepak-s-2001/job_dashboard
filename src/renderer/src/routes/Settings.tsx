@@ -173,7 +173,12 @@ export function Settings() {
           <Stat label="Input tokens" value={usage.inputTokens.toLocaleString()} />
           <Stat label="Output tokens" value={usage.outputTokens.toLocaleString()} />
         </dl>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <p className="mt-3 text-sm text-muted">
+          Everything is stored in a plain <code className="font-mono text-[13px]">db.json</code>{' '}
+          plus your resume PDFs, in the data folder. New app versions keep reading the same
+          folder — updating never touches your applications.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button onClick={() => call(api.system.openDataFolder())}>Open data folder</Button>
           <Button
             onClick={async () => {
@@ -189,10 +194,12 @@ export function Settings() {
             }}
             disabled={busy !== null}
           >
-            {busy === 'export' ? <Spinner /> : 'Export backup'}
+            {busy === 'export' ? <Spinner /> : 'Export a copy now'}
           </Button>
         </div>
       </Card>
+
+      <BackupsCard />
 
       <p className="text-center text-[11px] text-muted">Job Dashboard v{version || '…'}</p>
     </div>
@@ -205,5 +212,78 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dt className="text-[11px] font-bold uppercase tracking-wide text-muted">{label}</dt>
       <dd className="font-display text-lg font-bold">{value}</dd>
     </div>
+  )
+}
+
+function BackupsCard() {
+  const toast = useToast()
+  const { refresh } = useAppData()
+  const [backups, setBackups] = useState<
+    { name: string; savedAt: string; applications: number }[]
+  >([])
+  const [restoring, setRestoring] = useState<string | null>(null)
+
+  const load = () =>
+    call(api.system.backupsList())
+      .then(setBackups)
+      .catch(() => {})
+  useEffect(() => {
+    void load()
+  }, [])
+
+  async function restore(name: string) {
+    if (
+      !confirm(
+        `Replace all current applications with the snapshot from ${name.replace(/^db-|\.json$/g, '')}?\n\nYour current state is saved as an extra backup first, so this is reversible.`,
+      )
+    )
+      return
+    setRestoring(name)
+    try {
+      const n = await call(api.system.backupRestore(name))
+      await refresh()
+      await load()
+      toast.push('success', `Restored — ${n} application${n === 1 ? '' : 's'}.`)
+    } catch (e) {
+      toast.push('error', e instanceof Error ? e.message : 'Restore failed.')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <h2 className="text-lg">Automatic backups</h2>
+      <p className="mt-1 text-sm text-muted">
+        The app snapshots your data every time it starts and keeps the last 20. If something
+        ever looks wrong, roll back here.
+      </p>
+      {backups.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">No snapshots yet — they appear after the next launch.</p>
+      ) : (
+        <ul className="mt-3 space-y-1.5">
+          {backups.map((b) => (
+            <li
+              key={b.name}
+              className="flex items-center justify-between gap-3 border-2 border-ink bg-ground px-3 py-2 text-sm"
+            >
+              <span className="font-semibold">
+                {b.name.replace(/^db-/, '').replace(/\.json$/, '')}
+                <span className="ml-2 font-normal text-muted">
+                  {b.applications} application{b.applications === 1 ? '' : 's'}
+                </span>
+              </span>
+              <Button
+                size="sm"
+                onClick={() => restore(b.name)}
+                disabled={restoring !== null}
+              >
+                {restoring === b.name ? <Spinner /> : 'Restore'}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   )
 }

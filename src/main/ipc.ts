@@ -23,6 +23,8 @@ import {
   setModel,
   getUsage,
   dataDir,
+  listBackups,
+  restoreBackup,
 } from './store'
 import { getApiKey, setApiKey, hasApiKey, clearApiKey } from './secrets'
 import { extractJd, testApiKey, ExtractionError } from './extract'
@@ -205,6 +207,11 @@ export function registerIpc(): void {
       return fail(`Export failed: ${(err as Error).message}`)
     }
   })
+
+  ipcMain.handle(IPC.backupsList, () => ok(listBackups()))
+  ipcMain.handle(IPC.backupRestore, (_e, name: string) =>
+    guard(() => restoreBackup(name)),
+  )
 
   ipcMain.handle(IPC.appVersion, () => ok(app.getVersion()))
 }
