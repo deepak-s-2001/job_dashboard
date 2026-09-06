@@ -1,14 +1,13 @@
 import {
   forwardRef,
   type InputHTMLAttributes,
-  type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   type ReactNode,
 } from 'react'
 import { cn } from '@/lib/cn'
 
 const BASE =
-  'w-full border-3 border-ink bg-surface rounded px-3 text-sm nb-focus placeholder:text-muted/70 disabled:opacity-50'
+  'w-full border-3 border-ink bg-surface rounded px-3 text-[15px] nb-focus placeholder:text-muted/70 disabled:opacity-50'
 
 export function Label({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
@@ -57,20 +56,5 @@ export const Textarea = forwardRef<
   )
 })
 
-export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
-  function Select({ className, children, ...rest }, ref) {
-    return (
-      <select
-        ref={ref}
-        className={cn(BASE, 'h-10 appearance-none bg-[right_0.6rem_center] bg-no-repeat pr-9', className)}
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
-        }}
-        {...rest}
-      >
-        {children}
-      </select>
-    )
-  },
-)
+export { Select } from './Select'
+export type { SelectOption } from './Select'

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppData } from '@/lib/store'
 import { api, call } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/Confirm'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Fieldset } from '@/components/ui/Field'
@@ -217,6 +218,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function BackupsCard() {
   const toast = useToast()
+  const confirm = useConfirm()
   const { refresh } = useAppData()
   const [backups, setBackups] = useState<
     { name: string; savedAt: string; applications: number }[]
@@ -232,12 +234,14 @@ function BackupsCard() {
   }, [])
 
   async function restore(name: string) {
-    if (
-      !confirm(
-        `Replace all current applications with the snapshot from ${name.replace(/^db-|\.json$/g, '')}?\n\nYour current state is saved as an extra backup first, so this is reversible.`,
-      )
-    )
-      return
+    const yes = await confirm({
+      title: 'Restore this snapshot?',
+      body: `All current applications are replaced with the snapshot from ${name
+        .replace(/^db-/, '')
+        .replace(/\.json$/, '')}. Your current state is saved as an extra backup first, so this is reversible.`,
+      confirmLabel: 'Restore',
+    })
+    if (!yes) return
     setRestoring(name)
     try {
       const n = await call(api.system.backupRestore(name))

@@ -10,6 +10,7 @@ import {
 import { api, call } from '@/lib/api'
 import { useAppData } from '@/lib/store'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/Confirm'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Textarea, Fieldset } from '@/components/ui/Field'
 import { Spinner, EmptyState, Divider } from '@/components/ui/misc'
@@ -18,13 +19,14 @@ import { ResumePane } from '@/components/ResumePane'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
-import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials } from '@/lib/format'
+import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, titleCase } from '@/lib/format'
 
 export function Detail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const toast = useToast()
+  const confirm = useConfirm()
   const { tags, settings, refreshMeta, refresh } = useAppData()
 
   const [app, setApp] = useState<Application | null>(null)
@@ -82,8 +84,19 @@ export function Detail() {
 
   async function del() {
     if (!app) return
-    if (!confirm(`Delete the ${app.company} application and its resumes? This cannot be undone.`))
-      return
+    const yes = await confirm({
+      title: 'Delete this application?',
+      body: (
+        <>
+          <strong>{app.roleTitle}</strong> at <strong>{app.company}</strong> and its{' '}
+          {app.resumes.length} attached resume{app.resumes.length === 1 ? '' : 's'} will be
+          removed. This cannot be undone.
+        </>
+      ),
+      confirmLabel: 'Delete',
+      danger: true,
+    })
+    if (!yes) return
     await call(api.apps.remove(app.id))
     await refresh()
     navigate('/')
@@ -350,24 +363,22 @@ function DetailsForm({
       <Field label="Employment type">
         <Select
           value={app.employmentType ?? ''}
-          onChange={(e) => onPatch({ employmentType: (e.target.value || null) as EmploymentType | null })}
-        >
-          <option value="">—</option>
-          {EMPLOYMENT_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </Select>
+          onChange={(v) => onPatch({ employmentType: (v || null) as EmploymentType | null })}
+          options={[
+            { value: '', label: '—' },
+            ...EMPLOYMENT_TYPES.map((t) => ({ value: t, label: titleCase(t) })),
+          ]}
+        />
       </Field>
       <Field label="Workplace">
         <Select
           value={app.workplaceType ?? ''}
-          onChange={(e) => onPatch({ workplaceType: (e.target.value || null) as WorkplaceType | null })}
-        >
-          <option value="">—</option>
-          {WORKPLACE_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </Select>
+          onChange={(v) => onPatch({ workplaceType: (v || null) as WorkplaceType | null })}
+          options={[
+            { value: '', label: '—' },
+            ...WORKPLACE_TYPES.map((t) => ({ value: t, label: titleCase(t) })),
+          ]}
+        />
       </Field>
       <Field label="Date posted">
         <Input type="date" defaultValue={app.datePosted ?? ''} onBlur={(e) => commit(e.target.value, app.datePosted ?? '', (v) => onPatch({ datePosted: v || null }))} />

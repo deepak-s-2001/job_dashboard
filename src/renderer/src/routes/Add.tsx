@@ -9,7 +9,7 @@ import { Input, Textarea, Select, Fieldset } from '@/components/ui/Field'
 import { Spinner, Divider } from '@/components/ui/misc'
 import { TagInput } from '@/components/TagInput'
 import { StatusControl } from '@/components/StatusControl'
-import { todayIso } from '@/lib/format'
+import { todayIso, titleCase } from '@/lib/format'
 import {
   EMPLOYMENT_TYPES,
   WORKPLACE_TYPES,
@@ -229,28 +229,22 @@ export function AddApplication() {
               <Fieldset label="Employment type">
                 <Select
                   value={form.employmentType}
-                  onChange={(e) => set('employmentType', e.target.value as EmploymentType | '')}
-                >
-                  <option value="">—</option>
-                  {EMPLOYMENT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => set('employmentType', v as EmploymentType | '')}
+                  options={[
+                    { value: '', label: '—' },
+                    ...EMPLOYMENT_TYPES.map((t) => ({ value: t, label: titleCase(t) })),
+                  ]}
+                />
               </Fieldset>
               <Fieldset label="Workplace">
                 <Select
                   value={form.workplaceType}
-                  onChange={(e) => set('workplaceType', e.target.value as WorkplaceType | '')}
-                >
-                  <option value="">—</option>
-                  {WORKPLACE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(v) => set('workplaceType', v as WorkplaceType | '')}
+                  options={[
+                    { value: '', label: '—' },
+                    ...WORKPLACE_TYPES.map((t) => ({ value: t, label: titleCase(t) })),
+                  ]}
+                />
               </Fieldset>
               <Fieldset label="Date posted">
                 <Input

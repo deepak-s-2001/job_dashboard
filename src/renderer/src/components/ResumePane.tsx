@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { Application } from '@shared/types'
 import { api, call } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/Confirm'
 import { IconButton, Spinner } from './ui/misc'
 
 const PdfViewer = lazy(() =>
@@ -20,6 +21,7 @@ export function ResumePane({
   onChanged: () => void | Promise<void>
 }) {
   const toast = useToast()
+  const confirm = useConfirm()
   const inputRef = useRef<HTMLInputElement>(null)
   const [selected, setSelected] = useState<string | null>(
     app.resumes.find((r) => r.isPrimary)?.id ?? app.resumes[0]?.id ?? null,
@@ -103,7 +105,13 @@ export function ResumePane({
   }
 
   async function remove(id: string) {
-    if (!confirm('Remove this resume from the job? The file is deleted from the app folder.')) return
+    const yes = await confirm({
+      title: 'Remove this resume?',
+      body: 'The PDF is deleted from the app’s data folder. Your original file is untouched.',
+      confirmLabel: 'Remove',
+      danger: true,
+    })
+    if (!yes) return
     try {
       await call(api.resumes.remove(app.id, id))
       await onChanged()

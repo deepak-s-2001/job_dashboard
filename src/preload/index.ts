@@ -65,6 +65,19 @@ const api = {
   usage: {
     get: () => invoke<UsageTotals>(IPC.usageGet),
   },
+  win: {
+    minimize: () => ipcRenderer.invoke('win:minimize'),
+    toggleMaximize: () => ipcRenderer.invoke('win:toggleMaximize') as Promise<boolean>,
+    close: () => ipcRenderer.invoke('win:close'),
+    isMaximized: () => ipcRenderer.invoke('win:isMaximized') as Promise<boolean>,
+    onMaximizedChange: (cb: (maximized: boolean) => void): (() => void) => {
+      const listener = (_e: unknown, v: boolean) => cb(v)
+      ipcRenderer.on('win:maximized', listener)
+      return () => {
+        ipcRenderer.removeListener('win:maximized', listener)
+      }
+    },
+  },
   system: {
     linkedinLogin: () => invoke<boolean>(IPC.linkedinLogin),
     openDataFolder: () => invoke<boolean>(IPC.openDataFolder),

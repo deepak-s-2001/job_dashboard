@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { initStore, shutdownStore } from './store'
@@ -55,7 +55,8 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 640,
     show: false,
-    backgroundColor: '#fdf6ec',
+    frame: false,
+    backgroundColor: '#141414',
     title: 'Job Dashboard',
     autoHideMenuBar: true,
     icon: isDev ? join(process.cwd(), 'build/icon.png') : undefined,
@@ -69,6 +70,10 @@ function createWindow(): void {
   })
 
   win.once('ready-to-show', () => win.show())
+
+  const sendMax = () => win.webContents.send('win:maximized', win.isMaximized())
+  win.on('maximize', sendMax)
+  win.on('unmaximize', sendMax)
 
   if (process.env['SMOKE']) {
     win.webContents.on('console-message', (_e, level, message) =>
@@ -128,9 +133,26 @@ function createWindow(): void {
   }
 }
 
+function focused(): BrowserWindow | null {
+  return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null
+}
+
+function registerWindowIpc(): void {
+  ipcMain.handle('win:minimize', () => focused()?.minimize())
+  ipcMain.handle('win:toggleMaximize', () => {
+    const w = focused()
+    if (!w) return false
+    w.isMaximized() ? w.unmaximize() : w.maximize()
+    return w.isMaximized()
+  })
+  ipcMain.handle('win:close', () => focused()?.close())
+  ipcMain.handle('win:isMaximized', () => focused()?.isMaximized() ?? false)
+}
+
 app.whenReady().then(async () => {
   await initStore()
   registerIpc()
+  registerWindowIpc()
   buildMenu()
 
   if (process.env['SMOKE_SCRAPE']) {

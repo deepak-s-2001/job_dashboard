@@ -7,15 +7,7 @@ import { AppCard } from '@/components/AppCard'
 import { StatsStrip } from '@/components/StatsStrip'
 import { FilterRail } from '@/components/FilterRail'
 import { Button } from '@/components/ui/Button'
-import { Input, Select } from '@/components/ui/Field'
 import { EmptyState, Spinner } from '@/components/ui/misc'
-
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: 'applied-desc', label: 'Newest applied' },
-  { key: 'applied-asc', label: 'Oldest applied' },
-  { key: 'posted-desc', label: 'Recently posted' },
-  { key: 'company-asc', label: 'Company A–Z' },
-]
 
 function readCollapsed(): boolean {
   try {
@@ -44,48 +36,17 @@ export function Dashboard() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="sticky top-0 z-10 border-b-3 border-ink bg-ground/95 backdrop-blur">
-        <div className="flex items-center gap-3 px-6 py-4">
-          <h1 className="font-display text-2xl font-bold">All applications</h1>
-          <span className="border-2 border-ink bg-surface px-2 py-0.5 text-sm font-bold">
-            {results.length}
-            {results.length !== apps.length && <span className="text-muted"> / {apps.length}</span>}
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b-3 border-ink bg-ground/95 px-6 py-4 backdrop-blur">
+        <h1 className="font-display text-2xl font-bold">All applications</h1>
+        <span className="border-2 border-ink bg-surface px-2 py-0.5 text-sm font-bold">
+          {results.length}
+          {results.length !== apps.length && <span className="text-muted"> / {apps.length}</span>}
+        </span>
+        {(query || results.length !== apps.length) && (
+          <span className="text-[13px] font-semibold text-muted">
+            {query ? `matching “${query}”` : 'filtered'}
           </span>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="relative">
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search…"
-                className="h-10 w-60 pl-8 text-[15px]"
-              />
-              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted">
-                ⌕
-              </span>
-              {query && (
-                <button
-                  onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            <Select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="h-10 w-44 text-[15px]"
-              disabled={!!query}
-              title={query ? 'Sorted by search relevance' : undefined}
-            >
-              {SORTS.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
+        )}
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -96,6 +57,10 @@ export function Dashboard() {
             onChange={setFilters}
             collapsed={railCollapsed}
             onToggle={() => setRailCollapsed((v) => !v)}
+            query={query}
+            onQuery={setQuery}
+            sort={sort}
+            onSort={setSort}
           />
         )}
 

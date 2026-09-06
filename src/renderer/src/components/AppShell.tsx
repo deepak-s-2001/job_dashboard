@@ -4,6 +4,7 @@ import { useAppData } from '@/lib/store'
 import { cn } from '@/lib/cn'
 import { money } from '@/lib/format'
 import { Button } from './ui/Button'
+import { TitleBar } from './TitleBar'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '▚', end: true },
@@ -15,7 +16,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      <TitleBar />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside className="flex w-60 flex-none flex-col border-r-3 border-ink bg-accent-pink">
         <div className="border-b-3 border-ink px-4 py-4">
           <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink/70">
@@ -80,6 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="relative flex-1 overflow-y-auto nb-scroll">{children}</main>
+      </div>
     </div>
   )
 }

@@ -1,12 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import type { Application } from '@shared/types'
 import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORKPLACE_TYPES } from '@shared/types'
-import { EMPTY_FILTERS, filtersActive, type Filters } from '@/lib/filter'
+import { EMPTY_FILTERS, filtersActive, type Filters, type SortKey } from '@/lib/filter'
 import { SOURCE_LABEL, STATUS_HEX, titleCase } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { Input } from './ui/Field'
+import { Select } from './ui/Select'
 
 type ArrayKey = 'status' | 'employmentType' | 'workplaceType' | 'sourceSite' | 'tags'
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'applied-desc', label: 'Newest applied' },
+  { value: 'applied-asc', label: 'Oldest applied' },
+  { value: 'posted-desc', label: 'Recently posted' },
+  { value: 'company-asc', label: 'Company A–Z' },
+]
 
 export function FilterRail({
   apps,
@@ -14,13 +22,22 @@ export function FilterRail({
   onChange,
   collapsed,
   onToggle,
+  query,
+  onQuery,
+  sort,
+  onSort,
 }: {
   apps: Application[]
   filters: Filters
   onChange: (f: Filters) => void
   collapsed: boolean
   onToggle: () => void
+  query: string
+  onQuery: (q: string) => void
+  sort: SortKey
+  onSort: (s: SortKey) => void
 }) {
+  const searchRef = useRef<HTMLInputElement>(null)
   const facets = useMemo(() => {
     const count = (fn: (a: Application) => string | null | undefined) => {
       const m = new Map<string, number>()
@@ -55,20 +72,27 @@ export function FilterRail({
 
   if (collapsed) {
     return (
-      <div className="flex w-12 flex-none flex-col items-center gap-3 border-r-3 border-ink bg-surface py-3">
+      <div className="flex w-12 flex-none flex-col items-center gap-2.5 border-r-3 border-ink bg-surface py-3">
         <button
           onClick={onToggle}
-          title="Show filters"
+          title="Show search & filters"
           className="nb-focus flex h-8 w-8 items-center justify-center border-3 border-ink bg-accent-yellow text-lg font-bold hover:-translate-y-[1px] hover:shadow-hard-sm"
         >
           ›
         </button>
+        <button
+          onClick={onToggle}
+          title="Search"
+          className="nb-focus flex h-8 w-8 items-center justify-center border-2 border-ink bg-surface text-base hover:bg-ground"
+        >
+          ⌕
+        </button>
         <div className="[writing-mode:vertical-rl] rotate-180 text-[12px] font-bold uppercase tracking-[0.2em] text-muted">
-          Filters
+          Search &amp; filters
         </div>
-        {active > 0 && (
+        {(active > 0 || query) && (
           <span className="border-2 border-ink bg-accent-yellow px-1 text-[12px] font-bold">
-            {active}
+            {active + (query ? 1 : 0)}
           </span>
         )}
       </div>
@@ -76,31 +100,64 @@ export function FilterRail({
   }
 
   return (
-    <div className="m-4 mr-0 flex w-64 flex-none flex-col border-3 border-ink bg-surface rounded shadow-hard">
+    <div className="m-4 mr-0 flex w-72 flex-none flex-col border-3 border-ink bg-surface rounded shadow-hard">
       <div className="flex items-center justify-between border-b-3 border-ink px-3 py-2.5">
-        <span className="font-display text-[15px] font-bold uppercase tracking-wide">
-          Filters{' '}
-          {active > 0 && (
-            <span className="ml-1 rounded bg-accent-yellow px-1.5 text-sm">{active}</span>
-          )}
-        </span>
-        <div className="flex items-center gap-2">
-          {active > 0 && (
+        <span className="font-display text-[15px] font-bold uppercase tracking-wide">Find</span>
+        <button
+          onClick={onToggle}
+          title="Hide panel"
+          className="nb-focus flex h-7 w-7 items-center justify-center border-2 border-ink bg-ground text-base font-bold hover:bg-accent-coral"
+        >
+          ‹
+        </button>
+      </div>
+
+      <div className="space-y-2.5 border-b-3 border-ink p-3">
+        <div className="relative">
+          <Input
+            ref={searchRef}
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search company, role…"
+            className="h-10 pl-8 pr-8 text-[15px]"
+          />
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted">
+            ⌕
+          </span>
+          {query && (
             <button
-              onClick={() => onChange(EMPTY_FILTERS)}
-              className="text-[13px] font-bold text-muted underline hover:text-ink"
+              onClick={() => {
+                onQuery('')
+                searchRef.current?.focus()
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-lg leading-none text-muted hover:text-ink"
+              aria-label="Clear search"
             >
-              clear
+              ×
             </button>
           )}
-          <button
-            onClick={onToggle}
-            title="Hide filters"
-            className="nb-focus flex h-7 w-7 items-center justify-center border-2 border-ink bg-ground text-base font-bold hover:bg-accent-coral"
-          >
-            ‹
-          </button>
         </div>
+        <Select
+          value={sort}
+          onChange={(v) => onSort(v as SortKey)}
+          options={SORT_OPTIONS}
+          disabled={!!query}
+          title={query ? 'Ordered by search relevance while searching' : 'Sort'}
+        />
+      </div>
+
+      <div className="flex items-center justify-between border-b-3 border-ink px-3 py-2">
+        <span className="text-[12px] font-bold uppercase tracking-wide text-muted">
+          Filters {active > 0 && <span className="text-ink">· {active}</span>}
+        </span>
+        {active > 0 && (
+          <button
+            onClick={() => onChange(EMPTY_FILTERS)}
+            className="text-[13px] font-bold text-muted underline hover:text-ink"
+          >
+            clear
+          </button>
+        )}
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto nb-scroll p-3">
