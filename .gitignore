@@ -7,3 +7,4 @@ dist/
 .env.local
 .DS_Store
 Thumbs.db
+src/renderer/src/**/*.timestamp-*

@@ -6,6 +6,8 @@ directories:
   buildResources: build
   output: release
 
+icon: build/icon.ico
+
 files:
   - out/**
   - '!**/*.map'

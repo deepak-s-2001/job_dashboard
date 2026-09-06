@@ -49,10 +49,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-3">
+        <div className="space-y-2 p-3">
           <Button variant="accent" block onClick={() => navigate('/add')} className="bg-accent-yellow">
             <span className="text-lg leading-none">+</span> Add application
           </Button>
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+            className="nb-focus flex w-full items-center justify-center gap-2 border-2 border-ink bg-surface/70 px-3 py-1.5 text-[12px] font-semibold hover:bg-surface"
+          >
+            Quick jump
+            <kbd className="border border-ink bg-ground px-1 text-[10px]">⌘K</kbd>
+          </button>
         </div>
 
         <div className="mt-auto space-y-2 border-t-3 border-ink p-3 text-[12px]">

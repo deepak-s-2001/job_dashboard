@@ -9,7 +9,7 @@ import { App } from './App'
 import { ToastProvider } from './components/ui/Toast'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <HashRouter>
+  <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <ToastProvider>
       <App />
     </ToastProvider>

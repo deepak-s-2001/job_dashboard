@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { Application } from '@shared/types'
 import { api, call } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { PdfViewer } from './PdfViewer'
 import { IconButton, Spinner } from './ui/misc'
+
+const PdfViewer = lazy(() =>
+  import('./PdfViewer').then((m) => ({ default: m.PdfViewer })),
+)
 import { cn } from '@/lib/cn'
 import { fmtDate } from '@/lib/format'
 
@@ -208,7 +211,15 @@ export function ResumePane({
             <Spinner /> Loading…
           </div>
         ) : (
-          <PdfViewer data={bytes} />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center gap-2 text-sm text-muted">
+                <Spinner /> Loading viewer…
+              </div>
+            }
+          >
+            <PdfViewer data={bytes} />
+          </Suspense>
         )}
         {dragOver && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-accent-yellow/40 text-lg font-bold">

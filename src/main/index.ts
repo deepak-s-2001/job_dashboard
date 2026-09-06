@@ -1,7 +1,36 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
 import { initStore, shutdownStore } from './store'
 import { registerIpc } from './ipc'
+import { scrapeUrl } from './scraper'
+
+function buildMenu(): void {
+  const isMac = process.platform === 'darwin'
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      ...(isMac ? [{ role: 'appMenu' as const }] : []),
+      {
+        label: 'File',
+        submenu: [isMac ? { role: 'close' as const } : { role: 'quit' as const }],
+      },
+      { role: 'editMenu' },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' },
+        ],
+      },
+      { role: 'windowMenu' },
+    ]),
+  )
+}
 
 const isDev = !app.isPackaged
 
@@ -15,6 +44,7 @@ function createWindow(): void {
     backgroundColor: '#fdf6ec',
     title: 'Job Dashboard',
     autoHideMenuBar: true,
+    icon: isDev ? join(process.cwd(), 'build/icon.png') : undefined,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -39,6 +69,10 @@ function createWindow(): void {
           )
           console.log('SMOKE nav ->', href)
           await new Promise((r) => setTimeout(r, 2000))
+        }
+        if (process.env['SMOKE_EVAL']) {
+          await win.webContents.executeJavaScript(process.env['SMOKE_EVAL'] as string)
+          await new Promise((r) => setTimeout(r, 700))
         }
         const img = await win.webContents.capturePage()
         const { writeFileSync } = await import('node:fs')
@@ -83,9 +117,9 @@ function createWindow(): void {
 app.whenReady().then(async () => {
   await initStore()
   registerIpc()
+  buildMenu()
 
   if (process.env['SMOKE_SCRAPE']) {
-    const { scrapeUrl } = await import('./scraper')
     try {
       const r = await scrapeUrl(process.env['SMOKE_SCRAPE'] as string)
       console.log(
