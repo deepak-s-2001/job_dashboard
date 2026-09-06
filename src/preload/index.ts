@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
   ApiResult,
@@ -70,6 +70,8 @@ const api = {
     openDataFolder: () => invoke<boolean>(IPC.openDataFolder),
     exportAll: () => invoke<string>(IPC.exportAll),
     version: () => invoke<string>(IPC.appVersion),
+    /** absolute path of a dropped/selected File (Electron webUtils) */
+    pathForFile: (file: File) => webUtils.getPathForFile(file),
   },
 }
 

@@ -1,7 +1,15 @@
-import type { EmploymentType } from '@shared/types'
+import type { EmploymentType, WorkplaceType } from '@shared/types'
 import { fetchText } from '../render'
 import { htmlToText } from '../htmltext'
 import { titleCaseSlug, type Adapter } from './types'
+
+function mapWorkplace(v: unknown, isRemote: unknown): WorkplaceType | null {
+  const s = String(v ?? '').toLowerCase().replace(/[^a-z]/g, '')
+  if (s.includes('remote')) return 'remote'
+  if (s.includes('hybrid')) return 'hybrid'
+  if (s.includes('onsite') || s.includes('office')) return 'onsite'
+  return isRemote === true ? 'remote' : null
+}
 
 function mapEmployment(v: unknown): EmploymentType | null {
   const s = String(v ?? '').toLowerCase()
@@ -44,21 +52,16 @@ export const ashby: Adapter = {
     )
     if (jdText.length < 80) return null
 
-    const company =
-      (typeof data.organizationName === 'string' && data.organizationName) ||
-      (typeof data.name === 'string' && data.name) ||
-      titleCaseSlug(org)
-
     const publishedAt =
       typeof job.publishedAt === 'string' ? job.publishedAt.slice(0, 10) : null
 
     return {
       sourceSite: 'ashby',
-      company,
+      company: titleCaseSlug(org),
       roleTitle: typeof job.title === 'string' ? job.title.trim() : null,
       location: typeof job.location === 'string' ? job.location : null,
       employmentType: mapEmployment(job.employmentType),
-      workplaceType: job.isRemote === true ? 'remote' : null,
+      workplaceType: mapWorkplace(job.workplaceType, job.isRemote),
       datePosted: publishedAt,
       jdText,
     }
