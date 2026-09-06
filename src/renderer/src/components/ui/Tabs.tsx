@@ -52,7 +52,7 @@ export function Tab({
       aria-selected={active}
       onClick={() => ctx.onChange(value)}
       className={cn(
-        'nb-focus -mb-[3px] flex items-center gap-1.5 rounded-t border-3 border-b-0 px-3 py-1.5 text-[13px] font-bold',
+        'nb-focus -mb-[3px] flex items-center gap-1.5 rounded-t border-3 border-b-0 px-3.5 py-2 text-[14px] font-bold',
         active
           ? 'border-ink bg-surface text-ink'
           : 'border-transparent bg-transparent text-muted hover:text-ink',

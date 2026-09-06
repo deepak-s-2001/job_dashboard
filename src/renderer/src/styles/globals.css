@@ -25,6 +25,7 @@
     color: var(--ink);
     font-family: 'Inter Variable', Inter, system-ui, sans-serif;
     font-feature-settings: 'cv05', 'ss03';
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
@@ -72,6 +73,28 @@
   .nb-scroll {
     scrollbar-width: thin;
   }
+}
+
+/* hand-drawn highlighter stroke for key phrases in insights / tips */
+mark.hl {
+  --hl: 255, 214, 64;
+  background: linear-gradient(
+    101deg,
+    rgba(var(--hl), 0.55) 0%,
+    rgba(var(--hl), 0.95) 1.6%,
+    rgba(var(--hl), 0.9) 97%,
+    rgba(var(--hl), 0.55) 100%
+  );
+  color: inherit;
+  font-weight: 650;
+  padding: 0.06em 0.22em;
+  margin: 0 -0.06em;
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+mark.hl-pink {
+  --hl: 255, 144, 232;
 }
 
 .skeleton {

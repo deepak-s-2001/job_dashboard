@@ -17,8 +17,9 @@ Rules:
 - Skills: short strings exactly as they'd read on a resume ("Python", "CI/CD", "stakeholder management", "FDA 21 CFR Part 11"). Deduplicate near-identical mentions. Exclude generic filler ("team player", "fast-paced environment", "excellent communication") unless it names a concrete methodology or domain skill. Order each list by how prominently the JD emphasizes it, most important first.
 - required vs preferred: split by the JD's own framing ("required", "must have" vs "nice to have", "bonus", "preferred"). If the JD doesn't distinguish, put everything in required.
 - industryKeywords: the domain/ATS terms a strong resume for THIS role would mirror — industry, product area, standards, certifications, buzzwords — even if not framed as a "skill".
-- companyInsights: concrete, text-grounded things worth knowing when writing the resume — product area, company stage/size signals, tech stack, the kind of work, what they clearly value, tone. 3-7 bullets. No fluff, no guessing beyond the text.
-- tailoringTips: specific, actionable phrasing/emphasis moves for a resume aimed at this JD ("lead with the medical-device validation work", "mirror their 'design controls' language", "quantify test-coverage numbers"). 3-6 bullets.
+- companyInsights: concrete, text-grounded things worth knowing when writing the resume — product area, company stage/size signals, tech stack, the kind of work, what they clearly value, tone. 3-7 full sentences. No fluff, no guessing beyond the text.
+- tailoringTips: specific, actionable phrasing/emphasis moves for a resume aimed at this JD ("lead with the medical-device validation work", "mirror their 'design controls' language", "quantify test-coverage numbers"). 3-6 full sentences.
+- In companyInsights and tailoringTips ONLY, wrap the single most important phrase of each sentence (the part the reader must not miss — a keyword, a number, a name, the actionable verb phrase) in ==double equals==. One marked span per sentence, occasionally two; never mark a whole sentence.
 - seniority: your read of the level from the text ("entry-level", "mid", "senior", "staff", "lead / manager"), or null if genuinely unclear.
 - jdSummary: 2-3 plain sentences on what this role is.
 - responsibilities: the core duties, lightly normalized, from the JD.`

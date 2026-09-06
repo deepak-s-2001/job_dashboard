@@ -120,16 +120,16 @@ export function Detail() {
             ←
           </button>
           <div
-            className="flex h-11 w-11 flex-none items-center justify-center border-3 border-ink rounded font-display text-sm font-bold"
+            className="flex h-12 w-12 flex-none items-center justify-center border-3 border-ink rounded font-display text-base font-bold"
             style={{ background: accent }}
           >
             {initials(app.company)}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl font-bold leading-tight">
+            <h1 className="truncate font-display text-[22px] font-bold leading-tight">
               {app.roleTitle}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] font-semibold text-muted">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px] font-semibold text-muted">
               <span>{app.company}</span>
               {app.location && <span>· {app.location}</span>}
               <span>· applied {fmtDate(app.dateApplied)}</span>
@@ -146,6 +146,9 @@ export function Detail() {
                   </a>
                 </>
               )}
+            </div>
+            <div className="mt-2.5">
+              <StatusControl value={app.status} onChange={(s) => patch({ status: s })} size="sm" />
             </div>
           </div>
           <div className="flex flex-none items-center gap-2">
@@ -164,9 +167,6 @@ export function Detail() {
               Delete
             </Button>
           </div>
-        </div>
-        <div className="mt-2.5 pl-[3.7rem]">
-          <StatusControl value={app.status} onChange={(s) => patch({ status: s })} size="sm" />
         </div>
       </header>
 
@@ -192,19 +192,19 @@ export function Detail() {
               <Tab value="details">Details</Tab>
             </TabList>
 
-            <div className="min-h-0 flex-1 overflow-y-auto nb-scroll p-4">
-              <TabPanel value="jd" className="space-y-3">
+            <div className="min-h-0 flex-1 overflow-y-auto nb-scroll p-5">
+              <TabPanel value="jd" className="space-y-4">
                 {app.jdSummary && (
-                  <p className="border-l-4 border-ink bg-ground px-3 py-2 text-sm font-medium leading-relaxed">
+                  <p className="border-l-4 border-ink bg-ground px-3.5 py-2.5 text-[15px] font-medium leading-relaxed">
                     {app.jdSummary}
                   </p>
                 )}
                 {app.responsibilities.length > 0 && (
                   <div>
-                    <h4 className="mb-1.5 font-display text-sm font-bold uppercase tracking-wide">
+                    <h4 className="mb-2 font-display text-base font-bold uppercase tracking-wide">
                       Responsibilities
                     </h4>
-                    <ul className="list-disc space-y-1 pl-5 text-[13px] leading-relaxed">
+                    <ul className="list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed">
                       {app.responsibilities.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
@@ -212,12 +212,12 @@ export function Detail() {
                   </div>
                 )}
                 <Divider label="full text" />
-                <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-ink/90">
+                <pre className="whitespace-pre-wrap font-sans text-[14px] leading-relaxed text-ink/90">
                   {app.jdText}
                 </pre>
               </TabPanel>
 
-              <TabPanel value="skills" className="space-y-5">
+              <TabPanel value="skills" className="space-y-6">
                 {app.extracted ? (
                   <>
                     <SkillGroup title="Required" skills={app.skills.required} accent="#ff90e8" />
@@ -228,7 +228,7 @@ export function Detail() {
                       accent="#6c8cff"
                     />
                     {app.seniority && (
-                      <p className="text-[13px] text-muted">
+                      <p className="text-[14px] text-muted">
                         Seniority read: <strong className="text-ink">{app.seniority}</strong>
                       </p>
                     )}
@@ -239,16 +239,22 @@ export function Detail() {
               </TabPanel>
 
               <TabPanel value="insights">
+                <p className="mb-3 text-[14px] text-muted">
+                  Things to keep in mind when you write the resume for this one.
+                </p>
                 {app.extracted ? (
-                  <InsightList items={app.companyInsights} emoji="💡" />
+                  <InsightList items={app.companyInsights} tone="yellow" accent="#23a094" />
                 ) : (
                   <ExtractCta onRun={runExtraction} busy={extracting} hasKey={settings.hasApiKey} />
                 )}
               </TabPanel>
 
               <TabPanel value="tips">
+                <p className="mb-3 text-[14px] text-muted">
+                  Concrete phrasing and emphasis moves for a resume aimed at this JD.
+                </p>
                 {app.extracted ? (
-                  <InsightList items={app.tailoringTips} emoji="✏️" />
+                  <InsightList items={app.tailoringTips} tone="pink" accent="#ff90e8" />
                 ) : (
                   <ExtractCta onRun={runExtraction} busy={extracting} hasKey={settings.hasApiKey} />
                 )}
@@ -258,12 +264,13 @@ export function Detail() {
                 <Textarea
                   defaultValue={app.notes}
                   rows={12}
+                  className="text-[15px]"
                   placeholder="Referral, recruiter, salary discussion, interview notes…"
                   onBlur={(e) => {
                     if (e.target.value !== app.notes) void patch({ notes: e.target.value })
                   }}
                 />
-                <p className="mt-1.5 text-[11px] text-muted">Saved when you click away.</p>
+                <p className="mt-1.5 text-[12px] text-muted">Saved when you click away.</p>
               </TabPanel>
 
               <TabPanel value="details">
@@ -273,9 +280,9 @@ export function Detail() {
                     <Button onClick={runExtraction} disabled={extracting}>
                       {extracting ? <Spinner /> : '↻ Re-run extraction'}
                     </Button>
-                    <p className="mt-1.5 text-[11px] text-muted">
+                    <p className="mt-1.5 text-[12px] text-muted">
                       Extracted with {app.extractionModel?.replace('claude-', '')} on{' '}
-                      {fmtDate(app.extractedAt)}. Overwrites skills, insights & tips.
+                      {fmtDate(app.extractedAt)}. Overwrites skills, insights &amp; tips.
                     </p>
                   </div>
                 )}

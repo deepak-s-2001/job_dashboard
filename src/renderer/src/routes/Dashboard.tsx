@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useAppData } from '@/lib/store'
-import { EMPTY_FILTERS, filtersActive, useFilteredApps, type Filters, type SortKey } from '@/lib/filter'
+import { EMPTY_FILTERS, useFilteredApps, type Filters, type SortKey } from '@/lib/filter'
 import { AppCard } from '@/components/AppCard'
 import { StatsStrip } from '@/components/StatsStrip'
 import { FilterRail } from '@/components/FilterRail'
@@ -17,22 +17,37 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'company-asc', label: 'Company A–Z' },
 ]
 
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem('filtersCollapsed') === '1'
+  } catch {
+    return false
+  }
+}
+
 export function Dashboard() {
   const { apps, loading, error } = useAppData()
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortKey>('applied-desc')
-  const [showFilters, setShowFilters] = useState(true)
+  const [railCollapsed, setRailCollapsed] = useState(readCollapsed)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('filtersCollapsed', railCollapsed ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [railCollapsed])
 
   const results = useFilteredApps(apps, query, filters, sort)
-  const activeFilters = filtersActive(filters)
 
   return (
     <div className="flex h-full flex-col">
       <header className="sticky top-0 z-10 border-b-3 border-ink bg-ground/95 backdrop-blur">
         <div className="flex items-center gap-3 px-6 py-4">
           <h1 className="font-display text-2xl font-bold">All applications</h1>
-          <span className="border-2 border-ink bg-surface px-1.5 py-0.5 text-[12px] font-bold">
+          <span className="border-2 border-ink bg-surface px-2 py-0.5 text-sm font-bold">
             {results.length}
             {results.length !== apps.length && <span className="text-muted"> / {apps.length}</span>}
           </span>
@@ -42,7 +57,7 @@ export function Dashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search…"
-                className="h-10 w-56 pl-8"
+                className="h-10 w-60 pl-8 text-[15px]"
               />
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted">
                 ⌕
@@ -59,7 +74,7 @@ export function Dashboard() {
             <Select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="h-10 w-40"
+              className="h-10 w-44 text-[15px]"
               disabled={!!query}
               title={query ? 'Sorted by search relevance' : undefined}
             >
@@ -69,23 +84,19 @@ export function Dashboard() {
                 </option>
               ))}
             </Select>
-            {apps.length > 0 && (
-              <Button
-                variant={showFilters ? 'accent' : 'outline'}
-                onClick={() => setShowFilters((v) => !v)}
-              >
-                Filters {activeFilters > 0 && `(${activeFilters})`}
-              </Button>
-            )}
           </div>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        {showFilters && apps.length > 0 && (
-          <div className="w-60 flex-none overflow-hidden p-4 pr-0">
-            <FilterRail apps={apps} filters={filters} onChange={setFilters} />
-          </div>
+        {apps.length > 0 && (
+          <FilterRail
+            apps={apps}
+            filters={filters}
+            onChange={setFilters}
+            collapsed={railCollapsed}
+            onToggle={() => setRailCollapsed((v) => !v)}
+          />
         )}
 
         <div className="min-w-0 flex-1 overflow-y-auto nb-scroll p-6">
@@ -129,14 +140,14 @@ export function Dashboard() {
                     setFilters(EMPTY_FILTERS)
                   }}
                 >
-                  Clear search & filters
+                  Clear search &amp; filters
                 </Button>
               }
             >
               Try a looser search or fewer filters.
             </EmptyState>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid items-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(310px,1fr))]">
               <AnimatePresence mode="popLayout">
                 {results.map((a) => (
                   <AppCard key={a.id} app={a} />

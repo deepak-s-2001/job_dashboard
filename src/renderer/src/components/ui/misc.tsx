@@ -41,7 +41,7 @@ export function Divider({ label }: { label?: string }) {
   return (
     <div className="my-4 flex items-center gap-3">
       <div className="h-0 flex-1 border-t-2 border-dashed border-ink/30" />
-      <span className="text-[11px] font-bold uppercase tracking-wide text-muted">{label}</span>
+      <span className="text-[12px] font-bold uppercase tracking-wide text-muted">{label}</span>
       <div className="h-0 flex-1 border-t-2 border-dashed border-ink/30" />
     </div>
   )
@@ -63,8 +63,8 @@ export function EmptyState({
       <div className="flex h-16 w-16 items-center justify-center border-3 border-ink rounded bg-surface text-3xl shadow-hard">
         {emoji}
       </div>
-      <h3 className="text-xl">{title}</h3>
-      {children && <p className="text-sm text-muted">{children}</p>}
+      <h3 className="text-2xl">{title}</h3>
+      {children && <p className="text-[15px] leading-relaxed text-muted">{children}</p>}
       {action}
     </div>
   )

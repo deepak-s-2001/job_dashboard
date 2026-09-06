@@ -1,10 +1,6 @@
 import { useMemo } from 'react'
 import type { Application } from '@shared/types'
-import {
-  APPLICATION_STATUSES,
-  EMPLOYMENT_TYPES,
-  WORKPLACE_TYPES,
-} from '@shared/types'
+import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORKPLACE_TYPES } from '@shared/types'
 import { EMPTY_FILTERS, filtersActive, type Filters } from '@/lib/filter'
 import { SOURCE_LABEL, STATUS_HEX, titleCase } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -16,10 +12,14 @@ export function FilterRail({
   apps,
   filters,
   onChange,
+  collapsed,
+  onToggle,
 }: {
   apps: Application[]
   filters: Filters
   onChange: (f: Filters) => void
+  collapsed: boolean
+  onToggle: () => void
 }) {
   const facets = useMemo(() => {
     const count = (fn: (a: Application) => string | null | undefined) => {
@@ -53,20 +53,54 @@ export function FilterRail({
 
   const active = filtersActive(filters)
 
-  return (
-    <div className="flex h-full flex-col border-3 border-ink bg-surface rounded shadow-hard">
-      <div className="flex items-center justify-between border-b-3 border-ink px-3 py-2">
-        <span className="font-display text-sm font-bold uppercase tracking-wide">
-          Filters {active > 0 && <span className="ml-1 rounded bg-accent-yellow px-1.5">{active}</span>}
-        </span>
+  if (collapsed) {
+    return (
+      <div className="flex w-12 flex-none flex-col items-center gap-3 border-r-3 border-ink bg-surface py-3">
+        <button
+          onClick={onToggle}
+          title="Show filters"
+          className="nb-focus flex h-8 w-8 items-center justify-center border-3 border-ink bg-accent-yellow text-lg font-bold hover:-translate-y-[1px] hover:shadow-hard-sm"
+        >
+          ›
+        </button>
+        <div className="[writing-mode:vertical-rl] rotate-180 text-[12px] font-bold uppercase tracking-[0.2em] text-muted">
+          Filters
+        </div>
         {active > 0 && (
-          <button
-            onClick={() => onChange(EMPTY_FILTERS)}
-            className="text-[11px] font-bold text-muted underline hover:text-ink"
-          >
-            clear
-          </button>
+          <span className="border-2 border-ink bg-accent-yellow px-1 text-[12px] font-bold">
+            {active}
+          </span>
         )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="m-4 mr-0 flex w-64 flex-none flex-col border-3 border-ink bg-surface rounded shadow-hard">
+      <div className="flex items-center justify-between border-b-3 border-ink px-3 py-2.5">
+        <span className="font-display text-[15px] font-bold uppercase tracking-wide">
+          Filters{' '}
+          {active > 0 && (
+            <span className="ml-1 rounded bg-accent-yellow px-1.5 text-sm">{active}</span>
+          )}
+        </span>
+        <div className="flex items-center gap-2">
+          {active > 0 && (
+            <button
+              onClick={() => onChange(EMPTY_FILTERS)}
+              className="text-[13px] font-bold text-muted underline hover:text-ink"
+            >
+              clear
+            </button>
+          )}
+          <button
+            onClick={onToggle}
+            title="Hide filters"
+            className="nb-focus flex h-7 w-7 items-center justify-center border-2 border-ink bg-ground text-base font-bold hover:bg-accent-coral"
+          >
+            ‹
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto nb-scroll p-3">
@@ -91,13 +125,13 @@ export function FilterRail({
               type="date"
               value={filters.appliedFrom ?? ''}
               onChange={(e) => onChange({ ...filters, appliedFrom: e.target.value || null })}
-              className="h-9 px-2 text-[13px]"
+              className="h-9 px-2 text-[14px]"
             />
             <Input
               type="date"
               value={filters.appliedTo ?? ''}
               onChange={(e) => onChange({ ...filters, appliedTo: e.target.value || null })}
-              className="h-9 px-2 text-[13px]"
+              className="h-9 px-2 text-[14px]"
             />
           </div>
         </Group>
@@ -182,7 +216,7 @@ export function FilterRail({
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">{title}</div>
+      <div className="mb-1.5 text-[12px] font-bold uppercase tracking-wide text-muted">{title}</div>
       <div className="space-y-1">{children}</div>
     </div>
   )
@@ -205,7 +239,7 @@ function Check({
     <button
       onClick={onClick}
       className={cn(
-        'nb-focus flex w-full items-center gap-2 border-2 px-1.5 py-1 text-[13px] font-semibold',
+        'nb-focus flex w-full items-center gap-2 border-2 px-1.5 py-1 text-[14px] font-semibold',
         checked ? 'border-ink bg-accent-yellow' : 'border-transparent hover:border-ink/40',
       )}
     >
@@ -218,10 +252,10 @@ function Check({
         {checked ? '✓' : ''}
       </span>
       {swatch && (
-        <span className="h-2.5 w-2.5 flex-none border border-ink" style={{ background: swatch }} />
+        <span className="h-3 w-3 flex-none border border-ink" style={{ background: swatch }} />
       )}
       <span className="flex-1 truncate text-left">{label}</span>
-      {count !== undefined && <span className="text-[11px] text-muted">{count}</span>}
+      {count !== undefined && <span className="text-[12px] text-muted">{count}</span>}
     </button>
   )
 }
@@ -237,7 +271,7 @@ function TriToggle({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 py-0.5">
-      <span className="text-[13px] font-semibold">{label}</span>
+      <span className="text-[14px] font-semibold">{label}</span>
       <div className="flex border-2 border-ink">
         {(['any', 'yes', 'no'] as const).map((v) => (
           <button
