@@ -1,0 +1,32 @@
+appId: com.deepak.jobdashboard
+productName: Job Dashboard
+copyright: Copyright © 2026 Deepak S
+
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - out/**
+  - '!**/*.map'
+  - package.json
+
+asarUnpack:
+  - resources/**
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Job Dashboard
+
+publish: null
