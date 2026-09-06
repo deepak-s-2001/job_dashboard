@@ -145,7 +145,12 @@ export function ResumePane({
         }}
       />
 
-      <div className="flex flex-none flex-wrap items-center gap-1.5 border-b-3 border-ink bg-ground px-2 py-1.5">
+      <div
+        className={cn(
+          'flex flex-none flex-wrap items-center gap-1.5 border-b-3 border-ink bg-ground px-2 py-1.5',
+          app.resumes.length === 0 && 'hidden',
+        )}
+      >
         {app.resumes.map((r, i) => (
           <button
             key={r.id}
