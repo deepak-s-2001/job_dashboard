@@ -22,7 +22,7 @@ import { JobPrompt } from '@/components/JobPrompt'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
-import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, titleCase } from '@/lib/format'
+import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, titleCase, todayIso } from '@/lib/format'
 
 export function Detail() {
   const { id } = useParams<{ id: string }>()
@@ -225,7 +225,12 @@ export function Detail() {
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px] font-semibold text-muted">
               <span>{app.company}</span>
               {app.location && <span>· {app.location}</span>}
-              <span>· applied {fmtDate(app.dateApplied)}</span>
+              <span>
+                ·{' '}
+                {app.status === 'not-applied'
+                  ? `added ${fmtDate(app.createdAt)}`
+                  : `applied ${fmtDate(app.dateApplied)}`}
+              </span>
               {app.url && (
                 <>
                   <span>·</span>
@@ -241,7 +246,17 @@ export function Detail() {
               )}
             </div>
             <div className="mt-2.5">
-              <StatusControl value={app.status} onChange={(s) => patch({ status: s })} size="sm" />
+              <StatusControl
+                value={app.status}
+                onChange={(s) =>
+                  patch(
+                    app.status === 'not-applied' && s !== 'not-applied'
+                      ? { status: s, dateApplied: todayIso() }
+                      : { status: s },
+                  )
+                }
+                size="sm"
+              />
             </div>
           </div>
           <div className="flex flex-none items-center gap-2">

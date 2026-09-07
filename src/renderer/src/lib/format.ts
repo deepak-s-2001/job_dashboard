@@ -11,12 +11,27 @@ export const ACCENT_HEX: Record<Accent, string> = {
 }
 
 export const STATUS_HEX: Record<string, string> = {
+  'not-applied': '#ddd6c6',
   applied: '#6c8cff',
   interviewing: '#ffc900',
   offer: '#22c55e',
   rejected: '#ff6b57',
   ghosted: '#9ca3af',
   withdrawn: '#b47cff',
+}
+
+export const STATUS_LABEL: Record<string, string> = {
+  'not-applied': 'Not applied',
+  applied: 'Applied',
+  interviewing: 'Interviewing',
+  offer: 'Offer',
+  rejected: 'Rejected',
+  ghosted: 'Ghosted',
+  withdrawn: 'Withdrawn',
+}
+
+export function statusLabel(s: string): string {
+  return STATUS_LABEL[s] ?? titleCase(s)
 }
 
 export const SOURCE_LABEL: Record<string, string> = {

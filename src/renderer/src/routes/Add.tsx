@@ -11,6 +11,7 @@ import { TagInput } from '@/components/TagInput'
 import { StatusControl } from '@/components/StatusControl'
 import { todayIso, titleCase } from '@/lib/format'
 import {
+  DEFAULT_STATUS,
   EMPLOYMENT_TYPES,
   WORKPLACE_TYPES,
   type ApplicationStatus,
@@ -51,7 +52,7 @@ function fromScrape(s: ScrapedJob): FormState {
     salaryRange: s.salaryRange ?? '',
     jdText: s.jdText,
     dateApplied: todayIso(),
-    status: 'applied',
+    status: DEFAULT_STATUS,
     tags: [],
     notes: '',
   }
@@ -258,14 +259,38 @@ export function AddApplication() {
               <Fieldset label="Date applied">
                 <Input
                   type="date"
-                  value={form.dateApplied}
+                  value={form.status === 'not-applied' ? '' : form.dateApplied}
+                  disabled={form.status === 'not-applied'}
                   onChange={(e) => set('dateApplied', e.target.value)}
                 />
               </Fieldset>
             </div>
 
-            <Fieldset label="Status">
-              <StatusControl value={form.status} onChange={(s) => set('status', s)} />
+            <Fieldset
+              label="Status"
+              hint={
+                form.status === 'not-applied'
+                  ? 'Saved to your list. Switch to “Applied” once you send it — the applied date is set then.'
+                  : undefined
+              }
+            >
+              <StatusControl
+                value={form.status}
+                onChange={(s) =>
+                  setForm((f) =>
+                    f
+                      ? {
+                          ...f,
+                          status: s,
+                          dateApplied:
+                            f.status === 'not-applied' && s !== 'not-applied'
+                              ? todayIso()
+                              : f.dateApplied,
+                        }
+                      : f,
+                  )
+                }
+              />
             </Fieldset>
 
             <Fieldset label="Tags">

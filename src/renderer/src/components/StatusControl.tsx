@@ -1,5 +1,5 @@
 import { APPLICATION_STATUSES, type ApplicationStatus } from '@shared/types'
-import { STATUS_HEX, titleCase } from '@/lib/format'
+import { STATUS_HEX, statusLabel } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 export function StatusControl({
@@ -28,7 +28,7 @@ export function StatusControl({
             )}
             style={active ? { background: STATUS_HEX[s] } : undefined}
           >
-            {titleCase(s)}
+            {statusLabel(s)}
           </button>
         )
       })}
@@ -42,7 +42,7 @@ export function StatusPill({ status }: { status: ApplicationStatus }) {
       className="inline-flex items-center gap-1.5 border-2 border-ink px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
       style={{ background: STATUS_HEX[status] }}
     >
-      {titleCase(status)}
+      {statusLabel(status)}
     </span>
   )
 }

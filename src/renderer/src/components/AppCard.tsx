@@ -80,9 +80,16 @@ export const AppCard = memo(function AppCard({ app }: { app: Application }) {
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-3">
             <div
               className="text-[13px] font-semibold text-muted"
-              title={`Applied ${fmtDate(app.dateApplied)} · via ${SOURCE_LABEL[app.sourceSite] ?? titleCase(app.sourceSite)}`}
+              title={
+                app.status === 'not-applied'
+                  ? `Added ${fmtDate(app.createdAt)} · not applied yet`
+                  : `Applied ${fmtDate(app.dateApplied)} · via ${SOURCE_LABEL[app.sourceSite] ?? titleCase(app.sourceSite)}`
+              }
             >
-              Applied {relDays(app.dateApplied)} · {SOURCE_LABEL[app.sourceSite] ?? titleCase(app.sourceSite)}
+              {app.status === 'not-applied'
+                ? `Added ${relDays(app.createdAt)}`
+                : `Applied ${relDays(app.dateApplied)}`}{' '}
+              · {SOURCE_LABEL[app.sourceSite] ?? titleCase(app.sourceSite)}
             </div>
             <div className="flex flex-none items-center gap-1.5">
               <span className="border-2 border-ink bg-ground px-2 py-0.5 text-[13px] font-bold">

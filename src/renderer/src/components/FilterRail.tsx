@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react'
 import type { Application } from '@shared/types'
 import { APPLICATION_STATUSES, EMPLOYMENT_TYPES, WORKPLACE_TYPES } from '@shared/types'
 import { EMPTY_FILTERS, filtersActive, type Filters, type SortKey } from '@/lib/filter'
-import { SOURCE_LABEL, STATUS_HEX, titleCase } from '@/lib/format'
+import { SOURCE_LABEL, STATUS_HEX, statusLabel, titleCase } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { Input } from './ui/Field'
 import { Select } from './ui/Select'
@@ -170,7 +170,7 @@ export function FilterRail({
                 checked={filters.status.includes(s)}
                 onClick={() => toggle('status', s)}
                 swatch={STATUS_HEX[s]}
-                label={titleCase(s)}
+                label={statusLabel(s)}
                 count={facets.status.get(s)}
               />
             ))}

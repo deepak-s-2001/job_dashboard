@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Application } from '@shared/types'
-import { STATUS_HEX, titleCase } from '@/lib/format'
+import { STATUS_HEX, statusLabel } from '@/lib/format'
 
 export function StatsStrip({ apps }: { apps: Application[] }) {
   const stats = useMemo(() => {
@@ -9,12 +9,14 @@ export function StatsStrip({ apps }: { apps: Application[] }) {
     const byStatus: Record<string, number> = {}
     let thisWeek = 0
     let live = 0
+    let toApply = 0
     for (const a of apps) {
       byStatus[a.status] = (byStatus[a.status] ?? 0) + 1
-      if (a.dateApplied >= weekAgo) thisWeek++
+      if (a.status === 'not-applied') toApply++
+      else if (a.dateApplied >= weekAgo) thisWeek++
       if (a.status === 'applied' || a.status === 'interviewing') live++
     }
-    return { total: apps.length, thisWeek, live, byStatus }
+    return { total: apps.length, thisWeek, live, toApply, byStatus }
   }, [apps])
 
   if (apps.length === 0) return null
@@ -22,7 +24,8 @@ export function StatsStrip({ apps }: { apps: Application[] }) {
   return (
     <div className="flex flex-wrap items-stretch gap-2.5">
       <Tile label="Total" value={stats.total} accent="#ffffff" />
-      <Tile label="This week" value={stats.thisWeek} accent="#ffc900" />
+      {stats.toApply > 0 && <Tile label="To apply" value={stats.toApply} accent="#ddd6c6" />}
+      <Tile label="Applied this week" value={stats.thisWeek} accent="#ffc900" />
       <Tile label="Live" value={stats.live} accent="#a8e10c" />
       <div className="flex flex-1 flex-wrap items-center gap-1.5 border-3 border-ink bg-surface rounded px-3 py-2">
         {Object.entries(stats.byStatus)
@@ -33,7 +36,7 @@ export function StatsStrip({ apps }: { apps: Application[] }) {
               className="inline-flex items-center gap-1.5 border-2 border-ink px-1.5 py-0.5 text-[11px] font-bold"
               style={{ background: STATUS_HEX[s] }}
             >
-              {titleCase(s)} <span className="rounded bg-ink/15 px-1">{n}</span>
+              {statusLabel(s)} <span className="rounded bg-ink/15 px-1">{n}</span>
             </span>
           ))}
       </div>

@@ -18,6 +18,7 @@ export type EmploymentType =
   | 'temporary'
 
 export type ApplicationStatus =
+  | 'not-applied'
   | 'applied'
   | 'interviewing'
   | 'offer'
@@ -26,6 +27,7 @@ export type ApplicationStatus =
   | 'withdrawn'
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
+  'not-applied',
   'applied',
   'interviewing',
   'offer',
@@ -33,6 +35,9 @@ export const APPLICATION_STATUSES: ApplicationStatus[] = [
   'ghosted',
   'withdrawn',
 ]
+
+/** Status a freshly-added job starts in, until the user marks it applied. */
+export const DEFAULT_STATUS: ApplicationStatus = 'not-applied'
 
 export const EMPLOYMENT_TYPES: EmploymentType[] = [
   'full-time',
