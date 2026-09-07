@@ -18,6 +18,7 @@ import { Input, Select, Textarea, Fieldset } from '@/components/ui/Field'
 import { Spinner, EmptyState, Divider } from '@/components/ui/misc'
 import { Tabs, TabList, Tab, TabPanel } from '@/components/ui/Tabs'
 import { ResumePane } from '@/components/ResumePane'
+import { JobPrompt } from '@/components/JobPrompt'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
@@ -270,7 +271,7 @@ export function Detail() {
         <div className="flex min-h-0 flex-col">
           <Tabs value={tab} onChange={setTab} className="flex min-h-0 flex-1 flex-col">
             <TabList>
-              <Tab value="jd">Job description</Tab>
+              <Tab value="jd">Description</Tab>
               <Tab value="skills" count={skillTotal}>
                 Skills
               </Tab>
@@ -280,6 +281,7 @@ export function Detail() {
               <Tab value="tips" count={app.tailoringTips.length}>
                 Tips
               </Tab>
+              <Tab value="prompt">Prompt</Tab>
               <Tab value="notes">Notes</Tab>
               <Tab value="details">Details</Tab>
             </TabList>
@@ -352,6 +354,10 @@ export function Detail() {
                 )}
               </TabPanel>
 
+              <TabPanel value="prompt">
+                <JobPrompt app={app} />
+              </TabPanel>
+
               <TabPanel value="notes">
                 <Textarea
                   defaultValue={app.notes}
@@ -368,7 +374,7 @@ export function Detail() {
               <TabPanel value="details">
                 <DetailsForm app={app} tags={tags.map((t) => t.name)} onPatch={patch} />
                 {app.extracted && (
-                  <div className="mt-5 border-t-2 border-dashed border-ink/30 pt-3">
+                  <div className="mt-5 border-t-2 border-dashed border-ink/60 pt-3">
                     <Button onClick={runExtraction} disabled={extracting}>
                       {extracting ? <Spinner /> : '↻ Re-run extraction'}
                     </Button>
@@ -441,6 +447,7 @@ function DetailsForm({
       </Field>
       <Field label="Employment type">
         <Select
+          ariaLabel="Employment type"
           value={app.employmentType ?? ''}
           onChange={(v) => onPatch({ employmentType: (v || null) as EmploymentType | null })}
           options={[
@@ -451,6 +458,7 @@ function DetailsForm({
       </Field>
       <Field label="Workplace">
         <Select
+          ariaLabel="Workplace"
           value={app.workplaceType ?? ''}
           onChange={(v) => onPatch({ workplaceType: (v || null) as WorkplaceType | null })}
           options={[

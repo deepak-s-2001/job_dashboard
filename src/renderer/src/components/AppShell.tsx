@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside className="flex w-60 flex-none flex-col border-r-3 border-ink bg-accent-pink">
         <div className="border-b-3 border-ink px-4 py-4">
-          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink/70">
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink/85">
             Personal
           </div>
           <div className="font-display text-2xl font-bold leading-none">
@@ -58,10 +58,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
           <button
             onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
-            className="nb-focus flex w-full items-center justify-center gap-2 border-2 border-ink bg-surface/70 px-3 py-1.5 text-[12px] font-semibold hover:bg-surface"
+            className="nb-focus flex w-full items-center justify-center gap-2 border-2 border-ink bg-surface px-3 py-1.5 text-[13px] font-semibold hover:bg-ground"
           >
             Quick jump
-            <kbd className="border border-ink bg-ground px-1 text-[10px]">⌘K</kbd>
+            <kbd className="border border-ink bg-ground px-1 text-[11px]">⌘K</kbd>
           </button>
         </div>
 
@@ -76,8 +76,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               {money(usage.estimatedUsd)}
             </span>
           </div>
-          <div className="px-1 text-[10px] font-semibold uppercase tracking-wide text-ink/50">
-            {settings.extractionModel.replace('claude-', '')}
+          <div className="px-1 text-[11px] font-bold uppercase tracking-wide text-ink/80">
+            model: {settings.extractionModel.replace('claude-', '')}
           </div>
         </div>
       </aside>

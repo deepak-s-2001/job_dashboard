@@ -7,13 +7,13 @@ import {
 import { cn } from '@/lib/cn'
 
 const BASE =
-  'w-full border-3 border-ink bg-surface rounded px-3 text-[15px] nb-focus placeholder:text-muted/70 disabled:opacity-50'
+  'w-full border-3 border-ink bg-surface rounded px-3 text-[15px] nb-focus placeholder:text-muted/90 disabled:opacity-50'
 
 export function Label({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
     <span className="mb-1.5 flex items-baseline justify-between">
       <span className="text-[12px] font-bold uppercase tracking-wide text-muted">{children}</span>
-      {hint && <span className="text-[11px] text-muted">{hint}</span>}
+      {hint && <span className="text-[12px] text-muted">{hint}</span>}
     </span>
   )
 }

@@ -75,7 +75,7 @@ export const AppCard = memo(function AppCard({ app }: { app: Application }) {
           )}
         </div>
 
-        <div className="border-t-2 border-dashed border-ink/50" />
+        <div className="border-t-2 border-dashed border-ink/60" />
         <div>
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-3">
             <div
@@ -96,7 +96,7 @@ export const AppCard = memo(function AppCard({ app }: { app: Application }) {
                   {skillCount} skills
                 </span>
               ) : (
-                <span className="border-2 border-dashed border-ink/40 px-2 py-0.5 text-[13px] font-bold text-ink/45">
+                <span className="border-2 border-dashed border-ink/55 px-2 py-0.5 text-[13px] font-bold text-muted">
                   no AI
                 </span>
               )}

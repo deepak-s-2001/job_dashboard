@@ -228,6 +228,7 @@ export function AddApplication() {
               </Fieldset>
               <Fieldset label="Employment type">
                 <Select
+                  ariaLabel="Employment type"
                   value={form.employmentType}
                   onChange={(v) => set('employmentType', v as EmploymentType | '')}
                   options={[
@@ -238,6 +239,7 @@ export function AddApplication() {
               </Fieldset>
               <Fieldset label="Workplace">
                 <Select
+                  ariaLabel="Workplace"
                   value={form.workplaceType}
                   onChange={(v) => set('workplaceType', v as WorkplaceType | '')}
                   options={[

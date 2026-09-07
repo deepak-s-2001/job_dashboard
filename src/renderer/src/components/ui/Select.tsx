@@ -23,6 +23,7 @@ interface SelectProps {
   className?: string
   size?: 'sm' | 'md'
   title?: string
+  ariaLabel?: string
   align?: 'left' | 'right'
 }
 
@@ -51,6 +52,7 @@ export function Select({
   className,
   size = 'md',
   title,
+  ariaLabel,
   align = 'left',
 }: SelectProps) {
   const [open, setOpen] = useState(false)
@@ -134,6 +136,7 @@ export function Select({
         ref={btnRef}
         type="button"
         title={title}
+        aria-label={ariaLabel ?? title}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -183,7 +186,7 @@ export function Select({
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(o.value)}
                 className={cn(
-                  'flex w-full items-center gap-2 border-b-2 border-ink/10 px-3 py-2 text-left text-[14px] font-semibold last:border-b-0',
+                  'flex w-full items-center gap-2 border-b-2 border-ink/15 px-3 py-2 text-left text-[14px] font-semibold last:border-b-0',
                   i === active ? 'bg-accent-yellow' : 'bg-surface',
                   o.value === value && i !== active && 'bg-accent-yellow/40',
                 )}

@@ -20,9 +20,9 @@ const ToastCtx = createContext<{
 } | null>(null)
 
 const STYLES: Record<Kind, string> = {
-  success: 'bg-accent-lime',
-  error: 'bg-accent-coral',
-  info: 'bg-accent-cyan text-white',
+  success: 'bg-accent-lime text-ink',
+  error: 'bg-accent-coral text-ink',
+  info: 'bg-accent-cyan text-ink',
 }
 const ICON: Record<Kind, string> = { success: '✓', error: '!', info: 'i' }
 
@@ -40,12 +40,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={{ push }}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-80 flex-col gap-2">
+      <div
+        className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-80 flex-col gap-2"
+        role="region"
+        aria-label="Notifications"
+      >
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
               key={t.id}
               layout
+              role={t.kind === 'error' ? 'alert' : 'status'}
+              aria-live={t.kind === 'error' ? 'assertive' : 'polite'}
               initial={{ opacity: 0, x: 40, scale: 0.9 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 40, scale: 0.9 }}

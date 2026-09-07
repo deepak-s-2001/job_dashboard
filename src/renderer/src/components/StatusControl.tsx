@@ -21,7 +21,7 @@ export function StatusControl({
             onClick={() => onChange(s)}
             className={cn(
               'nb-focus border-2 border-ink font-bold uppercase tracking-wide transition-transform',
-              size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+              size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-[12px]',
               active
                 ? 'shadow-hard-sm -translate-y-[1px]'
                 : 'bg-surface text-muted hover:text-ink',

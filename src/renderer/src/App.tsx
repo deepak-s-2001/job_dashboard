@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import { AppDataProvider } from './lib/store'
 import { ViewProvider } from './lib/view'
 import { AppShell } from './components/AppShell'
@@ -12,6 +12,7 @@ import { Settings } from './routes/Settings'
 export function App() {
   const location = useLocation()
   return (
+    <MotionConfig reducedMotion="user">
     <AppDataProvider>
       <ViewProvider>
       <AppShell>
@@ -37,5 +38,6 @@ export function App() {
       <CommandPalette />
       </ViewProvider>
     </AppDataProvider>
+    </MotionConfig>
   )
 }

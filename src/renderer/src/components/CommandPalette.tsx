@@ -151,7 +151,7 @@ export function CommandPalette() {
                 </li>
               ))}
             </ul>
-            <div className="border-t-2 border-ink/20 px-3 py-1.5 text-[11px] text-muted">
+            <div className="border-t-2 border-ink/30 px-3 py-1.5 text-[12px] text-muted">
               ↑↓ navigate · ↵ open · esc close
             </div>
           </motion.div>

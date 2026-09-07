@@ -37,12 +37,12 @@ export function IconButton({
 }
 
 export function Divider({ label }: { label?: string }) {
-  if (!label) return <div className="my-4 border-t-2 border-dashed border-ink/30" />
+  if (!label) return <div className="my-4 border-t-2 border-dashed border-ink/60" />
   return (
     <div className="my-4 flex items-center gap-3">
-      <div className="h-0 flex-1 border-t-2 border-dashed border-ink/30" />
+      <div className="h-0 flex-1 border-t-2 border-dashed border-ink/60" />
       <span className="text-[12px] font-bold uppercase tracking-wide text-muted">{label}</span>
-      <div className="h-0 flex-1 border-t-2 border-dashed border-ink/30" />
+      <div className="h-0 flex-1 border-t-2 border-dashed border-ink/60" />
     </div>
   )
 }

@@ -142,6 +142,7 @@ export function FilterRail({
           onChange={(v) => onSort(v as SortKey)}
           options={SORT_OPTIONS}
           disabled={!!query}
+          ariaLabel="Sort applications"
           title={query ? 'Ordered by search relevance while searching' : 'Sort'}
         />
       </div>
