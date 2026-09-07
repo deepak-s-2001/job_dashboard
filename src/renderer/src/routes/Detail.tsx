@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Application } from '@shared/types'
 import {
@@ -9,6 +9,8 @@ import {
 } from '@shared/types'
 import { api, call } from '@/lib/api'
 import { useAppData } from '@/lib/store'
+import { useView } from '@/lib/view'
+import { useFilteredApps, sortApps } from '@/lib/filter'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/Confirm'
 import { Button } from '@/components/ui/Button'
@@ -27,12 +29,53 @@ export function Detail() {
   const [params] = useSearchParams()
   const toast = useToast()
   const confirm = useConfirm()
-  const { tags, settings, refreshMeta, refresh } = useAppData()
+  const { apps, tags, settings, refreshMeta, refresh } = useAppData()
+  const { query, filters, sort, narrowed } = useView()
 
   const [app, setApp] = useState<Application | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [tab, setTab] = useState('jd')
   const [extracting, setExtracting] = useState(false)
+
+  // The working set to page through: the dashboard's current search/filter
+  // results when this job is part of them, otherwise every job in sort order.
+  const results = useFilteredApps(apps, query, filters, sort)
+  const allSorted = useMemo(() => sortApps(apps, sort), [apps, sort])
+  const nav = useMemo(() => {
+    const inResults = results.some((a) => a.id === id)
+    const list = inResults ? results : allSorted
+    const i = list.findIndex((a) => a.id === id)
+    return {
+      list,
+      index: i,
+      inNarrowed: inResults && narrowed,
+      prev: i > 0 ? list[i - 1] : null,
+      next: i >= 0 && i < list.length - 1 ? list[i + 1] : null,
+    }
+  }, [results, allSorted, id, narrowed])
+
+  const goPrev = useCallback(() => {
+    if (nav.prev) navigate(`/app/${nav.prev.id}`)
+  }, [nav.prev, navigate])
+  const goNext = useCallback(() => {
+    if (nav.next) navigate(`/app/${nav.next.id}`)
+  }, [nav.next, navigate])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t?.tagName) || t?.isContentEditable) return
+      if (e.key === '[' || (e.altKey && e.key === 'ArrowLeft')) {
+        e.preventDefault()
+        goPrev()
+      } else if (e.key === ']' || (e.altKey && e.key === 'ArrowRight')) {
+        e.preventDefault()
+        goNext()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goPrev, goNext])
 
   const load = useCallback(async () => {
     if (!id) return
@@ -125,13 +168,49 @@ export function Detail() {
   return (
     <div className="flex h-full flex-col">
       <header className="flex-none border-b-3 border-ink bg-ground px-5 py-3">
-        <div className="flex items-start gap-3">
+        <div className="mb-2.5 flex items-center gap-2">
           <button
             onClick={() => navigate('/')}
-            className="nb-focus mt-0.5 border-3 border-ink bg-surface px-2 py-1 text-sm font-bold shadow-hard-sm hover:-translate-y-[1px]"
+            className="nb-focus flex items-center gap-1.5 border-3 border-ink bg-surface px-2.5 py-1 text-[13px] font-bold shadow-hard-sm hover:-translate-y-[1px]"
           >
-            ←
+            ← All applications
           </button>
+
+          {nav.index >= 0 && nav.list.length > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={goPrev}
+                disabled={!nav.prev}
+                title="Previous  ·  [ or Alt+←"
+                className="nb-focus flex h-8 w-8 items-center justify-center border-3 border-ink bg-surface font-bold shadow-hard-sm hover:-translate-y-[1px] disabled:opacity-35 disabled:shadow-none disabled:hover:translate-y-0"
+              >
+                ‹
+              </button>
+              <span
+                className="border-3 border-ink bg-surface px-2.5 py-1 text-[13px] font-bold tabular-nums"
+                title={nav.inNarrowed ? 'Position within your current search / filter' : 'Position in all applications'}
+              >
+                {nav.index + 1}
+                <span className="text-muted"> / {nav.list.length}</span>
+              </span>
+              <button
+                onClick={goNext}
+                disabled={!nav.next}
+                title="Next  ·  ] or Alt+→"
+                className="nb-focus flex h-8 w-8 items-center justify-center border-3 border-ink bg-surface font-bold shadow-hard-sm hover:-translate-y-[1px] disabled:opacity-35 disabled:shadow-none disabled:hover:translate-y-0"
+              >
+                ›
+              </button>
+              {nav.inNarrowed && (
+                <span className="ml-1 border-2 border-ink bg-accent-yellow px-1.5 py-0.5 text-[11px] font-bold uppercase">
+                  filtered
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-start gap-3">
           <div
             className="flex h-12 w-12 flex-none items-center justify-center border-3 border-ink rounded font-display text-base font-bold"
             style={{ background: accent }}

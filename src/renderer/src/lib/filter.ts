@@ -59,7 +59,7 @@ function passesFilters(a: Application, f: Filters): boolean {
   return true
 }
 
-function sortApps(list: Application[], key: SortKey): Application[] {
+export function sortApps(list: Application[], key: SortKey): Application[] {
   const s = [...list]
   switch (key) {
     case 'applied-asc':

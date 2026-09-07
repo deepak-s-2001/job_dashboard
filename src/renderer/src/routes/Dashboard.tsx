@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useAppData } from '@/lib/store'
-import { EMPTY_FILTERS, useFilteredApps, type Filters, type SortKey } from '@/lib/filter'
+import { useView } from '@/lib/view'
+import { EMPTY_FILTERS, useFilteredApps } from '@/lib/filter'
 import { AppCard } from '@/components/AppCard'
 import { StatsStrip } from '@/components/StatsStrip'
 import { FilterRail } from '@/components/FilterRail'
@@ -19,9 +20,7 @@ function readCollapsed(): boolean {
 
 export function Dashboard() {
   const { apps, loading, error } = useAppData()
-  const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
-  const [sort, setSort] = useState<SortKey>('applied-desc')
+  const { query, setQuery, filters, setFilters, sort, setSort } = useView()
   const [railCollapsed, setRailCollapsed] = useState(readCollapsed)
 
   useEffect(() => {

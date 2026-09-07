@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppDataProvider } from './lib/store'
+import { ViewProvider } from './lib/view'
 import { AppShell } from './components/AppShell'
 import { CommandPalette } from './components/CommandPalette'
 import { Dashboard } from './routes/Dashboard'
@@ -12,6 +13,7 @@ export function App() {
   const location = useLocation()
   return (
     <AppDataProvider>
+      <ViewProvider>
       <AppShell>
         <AnimatePresence mode="wait">
           <motion.div
@@ -33,6 +35,7 @@ export function App() {
         </AnimatePresence>
       </AppShell>
       <CommandPalette />
+      </ViewProvider>
     </AppDataProvider>
   )
 }
