@@ -83,7 +83,9 @@ const api = {
     openDataFolder: () => invoke<boolean>(IPC.openDataFolder),
     exportAll: () => invoke<string>(IPC.exportAll),
     backupsList: () =>
-      invoke<{ name: string; savedAt: string; applications: number }[]>(IPC.backupsList),
+      invoke<{ name: string; savedAt: string; label: string; applications: number }[]>(
+        IPC.backupsList,
+      ),
     backupRestore: (name: string) => invoke<number>(IPC.backupRestore, name),
     version: () => invoke<string>(IPC.appVersion),
     /** absolute path of a dropped/selected File (Electron webUtils) */

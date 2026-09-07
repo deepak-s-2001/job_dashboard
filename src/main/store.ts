@@ -1,12 +1,12 @@
 import { app } from 'electron'
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs'
 import { join } from 'node:path'
 import type {
@@ -54,28 +54,61 @@ export function backupsDir(): string {
   return dir
 }
 
-const KEEP_BACKUPS = 20
+const KEEP_BACKUPS = 40
+const BACKUP_RE = /^db-\d{4}-\d\d-\d\d.*\.json$/
 
-/** Snapshot db.json on launch (once per calendar day + on every version change),
- *  keeping the most recent KEEP_BACKUPS. Cheap insurance against a bad write or
- *  an accidental data-folder wipe. */
-function snapshot(): void {
+function listBackupFiles(): string[] {
+  try {
+    return readdirSync(backupsDir()).filter((f) => BACKUP_RE.test(f)).sort()
+  } catch {
+    return []
+  }
+}
+
+function pruneBackups(): void {
+  const files = listBackupFiles()
+  for (const f of files.slice(0, Math.max(0, files.length - KEEP_BACKUPS))) {
+    rmSync(join(backupsDir(), f), { force: true })
+  }
+}
+
+/** Comparison key: applications + tags only, so usage/settings churn doesn't
+ *  spawn backups and formatting differences are ignored. */
+function backupKey(json: string): string {
+  try {
+    const j = JSON.parse(json) as DBShape
+    return JSON.stringify({ a: j.applications ?? [], t: j.tags ?? [] })
+  } catch {
+    return json
+  }
+}
+
+/**
+ * Immutable, content-deduplicated snapshot of db.json. Called on launch and
+ * right before a delete/restore. A new file is written only when the set of
+ * applications or tags actually changed since the last snapshot; each one gets
+ * its own timestamped name (a later launch never overwrites an earlier one), so
+ * a mistake stays recoverable until KEEP_BACKUPS newer snapshots push it out.
+ */
+export function snapshot(): void {
   const src = dbPath()
   if (!existsSync(src)) return
   try {
-    const stamp = new Date().toISOString().slice(0, 10)
-    const dest = join(backupsDir(), `db-${stamp}.json`)
-    if (!existsSync(dest) || statSync(dest).mtimeMs < statSync(src).mtimeMs - 60_000) {
-      copyFileSync(src, dest)
+    const content = readFileSync(src, 'utf8')
+    const files = listBackupFiles()
+    const newest = files[files.length - 1]
+    if (
+      newest &&
+      backupKey(readFileSync(join(backupsDir(), newest), 'utf8')) === backupKey(content)
+    ) {
+      pruneBackups()
+      return
     }
-    const files = readdirSync(backupsDir())
-      .filter((f) => /^db-.*\.json$/.test(f))
-      .sort()
-    for (const f of files.slice(0, Math.max(0, files.length - KEEP_BACKUPS))) {
-      rmSync(join(backupsDir(), f), { force: true })
-    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) // 2026-09-06T16-13-05
+    writeFileSync(join(backupsDir(), `db-${stamp}.json`), content, 'utf8')
+    pruneBackups()
   } catch {
-    /* backups are best-effort, never block startup */
+    /* backups are best-effort, never block startup or a write */
   }
 }
 
@@ -98,25 +131,40 @@ export async function shutdownStore(): Promise<void> {
 export interface BackupInfo {
   name: string
   savedAt: string
+  label: string
   applications: number
+}
+
+function labelFor(name: string): string {
+  const m = name.match(/^db-(\d{4})-(\d\d)-(\d\d)(?:T(\d\d)-(\d\d)-(\d\d))?/)
+  if (!m) return name
+  const [, y, mo, d, hh, mi] = m
+  const date = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh ?? 0), Number(mi ?? 0))
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(hh ? { hour: 'numeric', minute: '2-digit' } : {}),
+  })
 }
 
 export function listBackups(): BackupInfo[] {
   try {
-    return readdirSync(backupsDir())
-      .filter((f) => /^db-.*\.json$/.test(f))
-      .sort()
+    return listBackupFiles()
       .reverse()
       .map((name) => {
         const p = join(backupsDir(), name)
         let applications = 0
         try {
-          applications = (JSON.parse(readFileSync(p, 'utf8')) as DBShape)
-            .applications.length
+          applications = (JSON.parse(readFileSync(p, 'utf8')) as DBShape).applications.length
         } catch {
           /* ignore */
         }
-        return { name, savedAt: statSync(p).mtime.toISOString(), applications }
+        return {
+          name,
+          savedAt: statSync(p).mtime.toISOString(),
+          label: labelFor(name),
+          applications,
+        }
       })
   } catch {
     return []
@@ -124,15 +172,12 @@ export function listBackups(): BackupInfo[] {
 }
 
 export async function restoreBackup(name: string): Promise<number> {
-  if (!/^db-[\w-]+\.json$/.test(name)) throw new Error('Bad backup name.')
+  if (!BACKUP_RE.test(name)) throw new Error('Bad backup name.')
   const src = join(backupsDir(), name)
   if (!existsSync(src)) throw new Error('That backup is gone.')
-  // safety copy of the current state before we overwrite it
-  try {
-    copyFileSync(dbPath(), join(backupsDir(), `db-before-restore-${Date.now()}.json`))
-  } catch {
-    /* ignore */
-  }
+  // snapshot the current state (distinct-content dedup) so the restore is reversible
+  await db.flushNow()
+  snapshot()
   const restored = JSON.parse(readFileSync(src, 'utf8')) as DBShape
   db.data.version = DB_VERSION
   db.data.applications = restored.applications ?? []
@@ -278,6 +323,8 @@ export async function applyExtraction(
 }
 
 export async function deleteApplication(id: string): Promise<void> {
+  await db.flushNow() // make sure disk = current state …
+  snapshot() // … then capture it before removing anything (content-deduped)
   db.data.applications = db.data.applications.filter((a) => a.id !== id)
   await db.write()
 }

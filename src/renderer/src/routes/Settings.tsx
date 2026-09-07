@@ -221,7 +221,7 @@ function BackupsCard() {
   const confirm = useConfirm()
   const { refresh } = useAppData()
   const [backups, setBackups] = useState<
-    { name: string; savedAt: string; applications: number }[]
+    { name: string; savedAt: string; label: string; applications: number }[]
   >([])
   const [restoring, setRestoring] = useState<string | null>(null)
 
@@ -233,12 +233,10 @@ function BackupsCard() {
     void load()
   }, [])
 
-  async function restore(name: string) {
+  async function restore(name: string, label: string) {
     const yes = await confirm({
       title: 'Restore this snapshot?',
-      body: `All current applications are replaced with the snapshot from ${name
-        .replace(/^db-/, '')
-        .replace(/\.json$/, '')}. Your current state is saved as an extra backup first, so this is reversible.`,
+      body: `All current applications are replaced with the snapshot from ${label}. Your current state is saved as an extra backup first, so this is reversible.`,
       confirmLabel: 'Restore',
     })
     if (!yes) return
@@ -259,27 +257,27 @@ function BackupsCard() {
     <Card className="p-5">
       <h2 className="text-lg">Automatic backups</h2>
       <p className="mt-1 text-sm text-muted">
-        The app snapshots your data every time it starts and keeps the last 20. If something
-        ever looks wrong, roll back here.
+        A snapshot is saved on every launch and right before any delete — each distinct state
+        keeps its own copy, and the last 40 are kept. If something ever looks wrong, roll back.
       </p>
       {backups.length === 0 ? (
         <p className="mt-3 text-sm text-muted">No snapshots yet — they appear after the next launch.</p>
       ) : (
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-3 max-h-72 space-y-1.5 overflow-y-auto nb-scroll pr-1">
           {backups.map((b) => (
             <li
               key={b.name}
               className="flex items-center justify-between gap-3 border-2 border-ink bg-ground px-3 py-2 text-sm"
             >
               <span className="font-semibold">
-                {b.name.replace(/^db-/, '').replace(/\.json$/, '')}
+                {b.label}
                 <span className="ml-2 font-normal text-muted">
                   {b.applications} application{b.applications === 1 ? '' : 's'}
                 </span>
               </span>
               <Button
                 size="sm"
-                onClick={() => restore(b.name)}
+                onClick={() => restore(b.name, b.label)}
                 disabled={restoring !== null}
               >
                 {restoring === b.name ? <Spinner /> : 'Restore'}
