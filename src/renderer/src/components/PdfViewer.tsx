@@ -72,7 +72,7 @@ export function PdfViewer({ data }: { data: Uint8Array | null }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
       renderTaskRef.current?.cancel()
-      const task = pdfPage.render({ canvas, canvasContext: ctx, viewport })
+      const task = pdfPage.render({ canvasContext: ctx, viewport })
       renderTaskRef.current = task
       try {
         await task.promise
