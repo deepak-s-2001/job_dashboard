@@ -64,10 +64,23 @@ The app icon is generated from `build/make_icon.py` (Pillow): `python build/make
 
 `%APPDATA%\job-dashboard\`
 - `db.json` — every application record
-- `resumes\<appId>\*.pdf` — attached resumes (copies)
-- `secrets.bin` — the OS-encrypted API key
+- `resumes\<appId>\*.pdf` — attached resumes (copies of the files you pick; originals untouched)
+- `backups\db-*.json` — automatic `db.json` snapshots (on launch + before a delete/restore; last 20)
+- `secrets.bin` — the API key, `safeStorage`-encrypted
 
-**Settings → Export backup** copies `db.json` + all resumes into a folder you choose.
+**Settings → Export a copy now** writes `db.json` + all resumes into a folder you choose.
+**Settings → Automatic backups** lists the snapshots and restores one.
+
+## Privacy & security
+
+- **Nothing phones home.** The only outbound request is the Anthropic API call you trigger with
+  **Extract**. The renderer's CSP blocks it from making any network request at all.
+- **The API key** lives only in the main process, encrypted at rest via the OS keychain
+  (`safeStorage`). It is never exposed to the UI over IPC, never written to `db.json`, and never
+  included in an export or a backup.
+- The window that renders your PDFs and scraped job text runs sandboxed, cannot navigate off its
+  own page, and job pages are scraped in a separate window with no access to app internals.
+- The installer is **unsigned** — SmartScreen will warn on first run ("More info → Run anyway").
 
 ## LinkedIn
 
@@ -82,7 +95,9 @@ A job link didn't parse well? Run the scraper directly to see what it got:
 MSYS_NO_PATHCONV=1 SMOKE_SCRAPE="<url>" npx electron .
 ```
 
-(`SMOKE`, `SMOKE_HASH`, `SMOKE_EVAL` similarly drive a one-off screenshot for UI debugging.)
+(`SMOKE`, `SMOKE_HASH`, `SMOKE_EVAL` similarly drive a one-off screenshot for UI debugging.
+These hooks, and the `JOBDASH_DATA_DIR` override, are compiled out of the packaged build —
+they only work when running from source.)
 
 ## Architecture
 
