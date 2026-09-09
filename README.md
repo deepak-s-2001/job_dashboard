@@ -270,7 +270,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     participant U as You
-    participant R as Renderer (UI)
+    participant R as Renderer UI
     participant M as Main process
     participant J as Job site
     participant A as Anthropic API
