@@ -34,6 +34,26 @@ export function statusLabel(s: string): string {
   return STATUS_LABEL[s] ?? titleCase(s)
 }
 
+export const RELATIONSHIP_LABEL: Record<string, string> = {
+  close: 'Close contact',
+  'former-colleague': 'Former colleague',
+  acquaintance: 'Acquaintance',
+  alum: 'Alum / shared network',
+  recruiter: 'Recruiter',
+  other: 'Other',
+}
+
+export function relationshipLabel(r: string): string {
+  return RELATIONSHIP_LABEL[r] ?? titleCase(r)
+}
+
+export function personInitials(name: string): string {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return '?'
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+}
+
 export const SOURCE_LABEL: Record<string, string> = {
   greenhouse: 'Greenhouse',
   lever: 'Lever',

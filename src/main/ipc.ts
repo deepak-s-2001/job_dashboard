@@ -5,9 +5,12 @@ import { IPC } from '@shared/ipc'
 import type {
   ApiResult,
   Application,
+  Contact,
   ExtractionModel,
   NewApplicationInput,
+  NewContactInput,
   TagDef,
+  UserProfile,
 } from '@shared/types'
 import {
   createApplication,
@@ -19,6 +22,13 @@ import {
   listTags,
   upsertTag,
   deleteTag,
+  listContacts,
+  getContact,
+  createContact,
+  updateContact,
+  deleteContact,
+  getProfile,
+  setProfile,
   getModel,
   setModel,
   getUsage,
@@ -155,12 +165,38 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.tagsUpsert, (_e, tag: TagDef) => guard(() => upsertTag(tag)))
   ipcMain.handle(IPC.tagsDelete, (_e, name: string) => guard(() => deleteTag(name)))
 
+  // ---------- contacts ----------
+  ipcMain.handle(IPC.contactsList, () => ok(listContacts()))
+  ipcMain.handle(IPC.contactGet, (_e, id: string) => {
+    const c = getContact(id)
+    return c ? ok(c) : fail<Contact>('Contact not found.')
+  })
+  ipcMain.handle(IPC.contactCreate, (_e, input: NewContactInput) =>
+    guard(() => createContact(input)),
+  )
+  ipcMain.handle(IPC.contactUpdate, (_e, id: string, patch: Partial<Contact>) =>
+    guard(async () => {
+      const updated = await updateContact(id, patch)
+      if (!updated) throw new Error('Contact not found.')
+      return updated
+    }),
+  )
+  ipcMain.handle(IPC.contactDelete, (_e, id: string) => guard(() => deleteContact(id).then(() => true)))
+
   // ---------- settings / secrets / misc ----------
   ipcMain.handle(IPC.settingsGet, () =>
-    ok({ extractionModel: getModel(), hasApiKey: hasApiKey() }),
+    ok({ extractionModel: getModel(), hasApiKey: hasApiKey(), profile: getProfile() }),
   )
   ipcMain.handle(IPC.settingsSetModel, (_e, model: ExtractionModel) =>
     guard(() => setModel(model)),
+  )
+  ipcMain.handle(IPC.settingsSetProfile, (_e, p: UserProfile) => guard(() => setProfile(p)))
+  ipcMain.handle(IPC.openExternal, (_e, url: string) =>
+    guard(async () => {
+      if (!/^(https?|mailto):/i.test(url)) throw new Error('Refused to open that link.')
+      await shell.openExternal(url)
+      return true
+    }),
   )
   ipcMain.handle(IPC.apiKeyStatus, () => ok(hasApiKey()))
   ipcMain.handle(IPC.apiKeySet, (_e, key: string) =>

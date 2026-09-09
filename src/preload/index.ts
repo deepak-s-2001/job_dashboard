@@ -3,14 +3,17 @@ import { IPC } from '../shared/ipc'
 import type {
   ApiResult,
   Application,
+  Contact,
   ExtractionModel,
   ExtractionResult,
   NewApplicationInput,
+  NewContactInput,
   Resume,
   ScrapedJob,
   Settings,
   TagDef,
   UsageTotals,
+  UserProfile,
 } from '../shared/types'
 
 const invoke = <T>(channel: string, ...args: unknown[]): Promise<ApiResult<T>> =>
@@ -53,9 +56,18 @@ const api = {
     upsert: (tag: TagDef) => invoke<void>(IPC.tagsUpsert, tag),
     remove: (name: string) => invoke<void>(IPC.tagsDelete, name),
   },
+  contacts: {
+    list: () => invoke<Contact[]>(IPC.contactsList),
+    get: (id: string) => invoke<Contact>(IPC.contactGet, id),
+    create: (input: NewContactInput) => invoke<Contact>(IPC.contactCreate, input),
+    update: (id: string, patch: Partial<Contact>) =>
+      invoke<Contact>(IPC.contactUpdate, id, patch),
+    remove: (id: string) => invoke<boolean>(IPC.contactDelete, id),
+  },
   settings: {
     get: () => invoke<Settings>(IPC.settingsGet),
     setModel: (model: ExtractionModel) => invoke<void>(IPC.settingsSetModel, model),
+    setProfile: (p: UserProfile) => invoke<void>(IPC.settingsSetProfile, p),
   },
   apiKey: {
     status: () => invoke<boolean>(IPC.apiKeyStatus),
@@ -87,6 +99,7 @@ const api = {
         IPC.backupsList,
       ),
     backupRestore: (name: string) => invoke<number>(IPC.backupRestore, name),
+    openExternal: (url: string) => invoke<boolean>(IPC.openExternal, url),
     version: () => invoke<string>(IPC.appVersion),
     /** absolute path of a dropped/selected File (Electron webUtils) */
     pathForFile: (file: File) => webUtils.getPathForFile(file),

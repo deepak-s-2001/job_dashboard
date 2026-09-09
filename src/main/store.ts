@@ -11,13 +11,16 @@ import {
 import { join } from 'node:path'
 import type {
   Application,
+  Contact,
   DBShape,
   ExtractionModel,
   NewApplicationInput,
+  NewContactInput,
   TagDef,
   UsageTotals,
+  UserProfile,
 } from '@shared/types'
-import { ACCENTS } from '@shared/types'
+import { ACCENTS, EMPTY_PROFILE } from '@shared/types'
 import { JsonDb, genId } from './jsondb'
 
 const DB_VERSION = 1
@@ -27,9 +30,10 @@ let db: JsonDb<DBShape>
 const defaultData: DBShape = {
   version: DB_VERSION,
   applications: [],
+  contacts: [],
   tags: [],
   usage: { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 },
-  settings: { extractionModel: 'claude-haiku-4-5' },
+  settings: { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } },
 }
 
 export function dataDir(): string {
@@ -72,12 +76,12 @@ function pruneBackups(): void {
   }
 }
 
-/** Comparison key: applications + tags only, so usage/settings churn doesn't
- *  spawn backups and formatting differences are ignored. */
+/** Comparison key: applications + contacts + tags only, so usage/settings churn
+ *  doesn't spawn backups and formatting differences are ignored. */
 function backupKey(json: string): string {
   try {
     const j = JSON.parse(json) as DBShape
-    return JSON.stringify({ a: j.applications ?? [], t: j.tags ?? [] })
+    return JSON.stringify({ a: j.applications ?? [], c: j.contacts ?? [], t: j.tags ?? [] })
   } catch {
     return json
   }
@@ -115,12 +119,15 @@ export function snapshot(): void {
 export async function initStore(): Promise<void> {
   snapshot()
   db = JsonDb.open<DBShape>(dbPath(), defaultData)
-  // shallow migration guard for future versions
+  // shallow migration guard for older db.json files
   db.data.version = DB_VERSION
   db.data.applications ??= []
+  db.data.contacts ??= []
   db.data.tags ??= []
   db.data.usage ??= { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
-  db.data.settings ??= { extractionModel: 'claude-haiku-4-5' }
+  db.data.settings ??= { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } }
+  db.data.settings.profile ??= { ...EMPTY_PROFILE }
+  for (const a of db.data.applications) a.contactIds ??= []
   await db.flushNow()
 }
 
@@ -181,9 +188,12 @@ export async function restoreBackup(name: string): Promise<number> {
   const restored = JSON.parse(readFileSync(src, 'utf8')) as DBShape
   db.data.version = DB_VERSION
   db.data.applications = restored.applications ?? []
+  db.data.contacts = restored.contacts ?? []
   db.data.tags = restored.tags ?? []
   db.data.usage = restored.usage ?? db.data.usage
   db.data.settings = restored.settings ?? db.data.settings
+  db.data.settings.profile ??= { ...EMPTY_PROFILE }
+  for (const a of db.data.applications) a.contactIds ??= []
   await db.flushNow()
   return db.data.applications.length
 }
@@ -231,6 +241,7 @@ export async function createApplication(input: NewApplicationInput): Promise<App
     accent: pickAccent(id + input.company),
     tags: dedupeTags(input.tags),
     notes: input.notes ?? '',
+    contactIds: input.contactIds ?? [],
     extracted: !!ex,
     extractionModel: ex?._model ?? null,
     extractedAt: ex ? ts : null,
@@ -268,6 +279,7 @@ const MUTABLE_FIELDS: (keyof Application)[] = [
   'status',
   'tags',
   'notes',
+  'contactIds',
   'seniority',
   'jdSummary',
   'responsibilities',
@@ -385,7 +397,101 @@ export async function deleteTag(name: string): Promise<void> {
   await db.write()
 }
 
+// ---------- contacts ----------
+
+export function listContacts(): Contact[] {
+  return [...db.data.contacts].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function getContact(id: string): Contact | undefined {
+  return db.data.contacts.find((c) => c.id === id)
+}
+
+function cleanLinks(links: unknown): Contact['links'] {
+  if (!Array.isArray(links)) return []
+  return links
+    .map((l) => ({
+      label: String((l as { label?: unknown })?.label ?? '').trim(),
+      url: String((l as { url?: unknown })?.url ?? '').trim(),
+    }))
+    .filter((l) => l.url)
+}
+
+export async function createContact(input: NewContactInput): Promise<Contact> {
+  const ts = nowIso()
+  const contact: Contact = {
+    id: genId(12),
+    name: input.name.trim(),
+    email: input.email.trim(),
+    company: input.company.trim(),
+    title: input.title.trim(),
+    relationship: input.relationship,
+    linkedinUrl: input.linkedinUrl.trim(),
+    links: cleanLinks(input.links),
+    howYouKnow: input.howYouKnow.trim(),
+    notes: input.notes.trim(),
+    createdAt: ts,
+    updatedAt: ts,
+  }
+  db.data.contacts.push(contact)
+  await db.write()
+  return contact
+}
+
+const CONTACT_FIELDS: (keyof Contact)[] = [
+  'name',
+  'email',
+  'company',
+  'title',
+  'relationship',
+  'linkedinUrl',
+  'links',
+  'howYouKnow',
+  'notes',
+]
+
+export async function updateContact(
+  id: string,
+  patch: Partial<Contact>,
+): Promise<Contact | undefined> {
+  const c = db.data.contacts.find((x) => x.id === id)
+  if (!c) return undefined
+  for (const key of CONTACT_FIELDS) {
+    if (key in patch && patch[key] !== undefined) {
+      // @ts-expect-error narrowed by the whitelist
+      c[key] = key === 'links' ? cleanLinks(patch.links) : patch[key]
+    }
+  }
+  c.updatedAt = nowIso()
+  await db.write()
+  return c
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  await db.flushNow()
+  snapshot()
+  db.data.contacts = db.data.contacts.filter((c) => c.id !== id)
+  for (const a of db.data.applications) {
+    if (a.contactIds?.includes(id)) a.contactIds = a.contactIds.filter((x) => x !== id)
+  }
+  await db.write()
+}
+
 // ---------- settings + usage ----------
+
+export function getProfile(): UserProfile {
+  return { ...EMPTY_PROFILE, ...db.data.settings.profile }
+}
+
+export async function setProfile(p: UserProfile): Promise<void> {
+  db.data.settings.profile = {
+    name: (p.name ?? '').trim(),
+    email: (p.email ?? '').trim(),
+    phone: (p.phone ?? '').trim(),
+    linkedinUrl: (p.linkedinUrl ?? '').trim(),
+  }
+  await db.write()
+}
 
 export function getModel(): ExtractionModel {
   return db.data.settings.extractionModel

@@ -62,6 +62,59 @@ export type Accent = (typeof ACCENTS)[number]
 
 export type ExtractionModel = 'claude-haiku-4-5' | 'claude-sonnet-5'
 
+// ---------- Network / referrals ----------
+
+export type ContactRelationship =
+  | 'close'
+  | 'former-colleague'
+  | 'acquaintance'
+  | 'alum'
+  | 'recruiter'
+  | 'other'
+
+export const CONTACT_RELATIONSHIPS: ContactRelationship[] = [
+  'close',
+  'former-colleague',
+  'acquaintance',
+  'alum',
+  'recruiter',
+  'other',
+]
+
+export interface ContactLink {
+  label: string
+  url: string
+}
+
+export interface Contact {
+  id: string
+  name: string
+  email: string
+  /** where they work — drives the automatic per-job match */
+  company: string
+  /** their role there */
+  title: string
+  relationship: ContactRelationship
+  linkedinUrl: string
+  links: ContactLink[]
+  /** free text, e.g. "sensor team at Acme, 2019–2021" — used in the referral email */
+  howYouKnow: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type NewContactInput = Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>
+
+export interface UserProfile {
+  name: string
+  email: string
+  phone: string
+  linkedinUrl: string
+}
+
+export const EMPTY_PROFILE: UserProfile = { name: '', email: '', phone: '', linkedinUrl: '' }
+
 export interface Resume {
   id: string
   filename: string
@@ -98,6 +151,8 @@ export interface Application {
   accent: Accent
   tags: string[]
   notes: string
+  /** contacts manually linked to this job (auto company-matches are derived, not stored) */
+  contactIds: string[]
 
   // the one Claude call (empty until Extract is run; re-runnable)
   extracted: boolean
@@ -132,14 +187,16 @@ export interface UsageTotals {
 export interface Settings {
   extractionModel: ExtractionModel
   hasApiKey: boolean
+  profile: UserProfile
 }
 
 export interface DBShape {
   version: number
   applications: Application[]
+  contacts: Contact[]
   tags: TagDef[]
   usage: UsageTotals
-  settings: { extractionModel: ExtractionModel }
+  settings: { extractionModel: ExtractionModel; profile: UserProfile }
 }
 
 // ---------- Scrape / extraction wire types ----------
@@ -191,6 +248,7 @@ export interface NewApplicationInput {
   status: ApplicationStatus
   tags: string[]
   notes: string
+  contactIds?: string[]
   /** when present, the app was extracted during the add flow */
   extraction: ExtractionResult | null
 }

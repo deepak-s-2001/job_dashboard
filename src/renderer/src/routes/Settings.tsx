@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Fieldset } from '@/components/ui/Field'
 import { Spinner } from '@/components/ui/misc'
 import { money } from '@/lib/format'
-import type { ExtractionModel } from '@shared/types'
+import type { ExtractionModel, UserProfile } from '@shared/types'
 
 const MODELS: { id: ExtractionModel; name: string; blurb: string }[] = [
   {
@@ -78,6 +78,8 @@ export function Settings() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6 md:p-8">
       <h1 className="text-3xl">Settings</h1>
+
+      <ProfileCard />
 
       <Card className="p-5">
         <h2 className="text-lg">Anthropic API key</h2>
@@ -204,6 +206,56 @@ export function Settings() {
 
       <p className="text-center text-[11px] text-muted">Job Dashboard v{version || '…'}</p>
     </div>
+  )
+}
+
+function ProfileCard() {
+  const { settings, saveProfile } = useAppData()
+  const toast = useToast()
+  const [form, setForm] = useState<UserProfile>(settings.profile)
+
+  useEffect(() => {
+    setForm(settings.profile)
+  }, [settings.profile])
+
+  const commit = async (next: UserProfile) => {
+    if (JSON.stringify(next) === JSON.stringify(settings.profile)) return
+    try {
+      await saveProfile(next)
+    } catch (e) {
+      toast.push('error', e instanceof Error ? e.message : 'Could not save.')
+    }
+  }
+
+  const field = (k: keyof UserProfile) => ({
+    value: form[k],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value })),
+    onBlur: () => void commit({ ...form, [k]: form[k].trim() }),
+  })
+
+  return (
+    <Card className="p-5">
+      <h2 className="text-lg">You</h2>
+      <p className="mt-1 text-sm text-muted">
+        Used to sign the referral emails the app drafts for your contacts. Stored only in your
+        local database.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Fieldset label="Name">
+          <Input placeholder="Jordan Rivera" {...field('name')} />
+        </Fieldset>
+        <Fieldset label="Email">
+          <Input type="email" placeholder="jordan@example.com" {...field('email')} />
+        </Fieldset>
+        <Fieldset label="Phone">
+          <Input placeholder="+1 555 010 0101" {...field('phone')} />
+        </Fieldset>
+        <Fieldset label="LinkedIn / portfolio">
+          <Input placeholder="linkedin.com/in/…" {...field('linkedinUrl')} />
+        </Fieldset>
+      </div>
+    </Card>
   )
 }
 

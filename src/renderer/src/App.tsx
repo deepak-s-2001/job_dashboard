@@ -7,6 +7,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { Dashboard } from './routes/Dashboard'
 import { AddApplication } from './routes/Add'
 import { Detail } from './routes/Detail'
+import { Network } from './routes/Network'
 import { Settings } from './routes/Settings'
 
 export function App() {
@@ -29,6 +30,7 @@ export function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/add" element={<AddApplication />} />
               <Route path="/app/:id" element={<Detail />} />
+              <Route path="/network" element={<Network />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useAppData } from '@/lib/store'
 import { useView } from '@/lib/view'
 import { EMPTY_FILTERS, useFilteredApps } from '@/lib/filter'
+import { normalizeCompany } from '@/lib/company'
 import { AppCard } from '@/components/AppCard'
 import { StatsStrip } from '@/components/StatsStrip'
 import { FilterRail } from '@/components/FilterRail'
@@ -19,9 +20,18 @@ function readCollapsed(): boolean {
 }
 
 export function Dashboard() {
-  const { apps, loading, error } = useAppData()
+  const { apps, contacts, loading, error } = useAppData()
   const { query, setQuery, filters, setFilters, sort, setSort } = useView()
   const [railCollapsed, setRailCollapsed] = useState(readCollapsed)
+
+  const contactsByCompany = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const c of contacts) {
+      const k = normalizeCompany(c.company)
+      if (k) m.set(k, (m.get(k) ?? 0) + 1)
+    }
+    return m
+  }, [contacts])
 
   useEffect(() => {
     try {
@@ -114,7 +124,11 @@ export function Dashboard() {
             <div className="grid items-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(310px,1fr))]">
               <AnimatePresence mode="popLayout">
                 {results.map((a) => (
-                  <AppCard key={a.id} app={a} />
+                  <AppCard
+                    key={a.id}
+                    app={a}
+                    contactCount={contactsByCompany.get(normalizeCompany(a.company)) ?? 0}
+                  />
                 ))}
               </AnimatePresence>
             </div>

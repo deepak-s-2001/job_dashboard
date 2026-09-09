@@ -6,7 +6,8 @@ PDF(s) you actually sent — all on one colourful board with search and filters.
 
 Paste a job link and the app reads the company, role, description and date for you. Press
 **Extract** and one small Claude call pulls out the skills, a summary, "what this company
-values", and concrete tailoring tips. Attach the resume you sent. That's the loop.
+values", and concrete tailoring tips. Attach the resume you sent. Keep a list of people who
+could refer you, and the app drafts the ask. That's the loop.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -22,6 +23,7 @@ calls are to the job site you paste (to read the posting) and — only when you 
 - [Install](#install)
 - [First run](#first-run)
 - [How it works](#how-it-works)
+- [Network & referrals](#network--referrals)
 - [Using it](#using-it)
 - [Your data & privacy](#your-data--privacy)
 - [Tech stack](#tech-stack)
@@ -151,6 +153,37 @@ anything.
 
 ---
 
+## Network & referrals
+
+A referred candidate is far more likely to get an interview — this is the part of the app that
+helps you actually ask. **No AI is involved anywhere here.**
+
+![Network](docs/network.png)
+
+**Keep your people** — the **Network** section holds contacts: name, email, other accounts
+(LinkedIn, GitHub, …), the company they work at, how you know them (former colleague, alum,
+recruiter, …), and a line of context you'll reuse in the email.
+
+**They attach to jobs automatically** — put a contact's company as *Bank of America*, and every
+BofA role you save shows that person on its **Network** tab. No linking step. Cards on the
+dashboard get a small `❋ N` badge when you know people at that company. You can also manually
+link a contact to a job they don't work at — a recruiter, or a friend who'll make an intro.
+
+![A job's Network tab](docs/job-network.png)
+
+**A referral email, written for you** — hit **Draft email** on any contact and the app builds
+a complete message: greeting, the ask (phrased differently for a close colleague vs. an alum
+vs. a recruiter), the job link, a fit line drawn from the extracted skills, an easy out, and a
+sign-off from your details in **Settings → You**. Edit it, then **Copy email** or **Open in
+mail app** (fills your default mail client via `mailto:`). Attach your resume and send.
+
+![The drafted referral email](docs/referral-email.png)
+
+The structure follows current advice on referral outreach — short, specific, respectful of the
+person's time, with a genuine way for them to say no.
+
+---
+
 ## Using it
 
 | Feature | How |
@@ -161,7 +194,11 @@ anything.
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |
 | Track status | Per job: **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted / Withdrawn**. New jobs start **Not applied**; flip to **Applied** when you submit and it stamps the date. |
 | Tag jobs | Free-text tags with colours (e.g. `dream`, `referral`) |
-| Command palette | `Ctrl`+`K` — jump to any job, add, or open Settings |
+| Add a contact | **Network → Add contact**, or `Ctrl`+`K` |
+| See who can refer you | A job's **Network** tab — contacts at that company appear automatically; link others by hand |
+| Draft a referral email | **Draft email** on any contact → edit → **Copy** or **Open in mail app** |
+| Set your sign-off | **Settings → You** — name, email, phone, LinkedIn (used only in the drafted emails) |
+| Command palette | `Ctrl`+`K` — jump to any job or contact, add, or open Settings |
 | Re-run extraction | Job detail → **Re-run extraction** (one more Claude call) |
 | Back up | **Settings → Export a copy now** writes `db.json` + all resumes to a folder you choose |
 | Restore | **Settings → Automatic backups** — the app snapshots `db.json` on every launch (keeps the last 20) and can roll back |
@@ -174,7 +211,7 @@ Everything lives in one folder in your Windows profile:
 
 ```
 %APPDATA%\job-dashboard\
-├─ db.json                  every application record (plain JSON — read it, edit it, back it up)
+├─ db.json                  applications + contacts + your sign-off details (plain JSON)
 ├─ resumes\<job-id>\*.pdf   copies of the resumes you attached
 ├─ backups\db-*.json        automatic snapshots of db.json (last 20)
 └─ secrets.bin              your Anthropic API key, encrypted by Windows (DPAPI)

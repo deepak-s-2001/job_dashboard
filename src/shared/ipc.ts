@@ -24,9 +24,18 @@ export const IPC = {
   tagsUpsert: 'tags:upsert',
   tagsDelete: 'tags:delete',
 
+  // contacts / network
+  contactsList: 'contacts:list',
+  contactGet: 'contacts:get',
+  contactCreate: 'contacts:create',
+  contactUpdate: 'contacts:update',
+  contactDelete: 'contacts:delete',
+
   // settings / secrets / misc
   settingsGet: 'settings:get',
   settingsSetModel: 'settings:setModel',
+  settingsSetProfile: 'settings:setProfile',
+  openExternal: 'system:openExternal',
   apiKeyStatus: 'apiKey:status',
   apiKeySet: 'apiKey:set',
   apiKeyTest: 'apiKey:test',

@@ -10,15 +10,20 @@ import {
 } from 'react'
 import type {
   Application,
+  Contact,
   NewApplicationInput,
+  NewContactInput,
   Settings,
   TagDef,
   UsageTotals,
+  UserProfile,
 } from '@shared/types'
+import { EMPTY_PROFILE } from '@shared/types'
 import { api, call } from './api'
 
 interface AppData {
   apps: Application[]
+  contacts: Contact[]
   tags: TagDef[]
   settings: Settings
   usage: UsageTotals
@@ -29,15 +34,26 @@ interface AppData {
   createApp: (input: NewApplicationInput) => Promise<Application>
   updateApp: (id: string, patch: Partial<Application>) => Promise<Application>
   removeApp: (id: string) => Promise<void>
+  createContact: (input: NewContactInput) => Promise<Contact>
+  updateContact: (id: string, patch: Partial<Contact>) => Promise<Contact>
+  removeContact: (id: string) => Promise<void>
+  linkContact: (appId: string, contactId: string) => Promise<void>
+  unlinkContact: (appId: string, contactId: string) => Promise<void>
+  saveProfile: (p: UserProfile) => Promise<void>
 }
 
 const Ctx = createContext<AppData | null>(null)
 
-const DEFAULT_SETTINGS: Settings = { extractionModel: 'claude-haiku-4-5', hasApiKey: false }
+const DEFAULT_SETTINGS: Settings = {
+  extractionModel: 'claude-haiku-4-5',
+  hasApiKey: false,
+  profile: EMPTY_PROFILE,
+}
 const DEFAULT_USAGE: UsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [apps, setApps] = useState<Application[]>([])
+  const [contacts, setContacts] = useState<Contact[]>([])
   const [tags, setTags] = useState<TagDef[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [usage, setUsage] = useState<UsageTotals>(DEFAULT_USAGE)
@@ -54,9 +70,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [a, t] = await Promise.all([call(api.apps.list()), call(api.tags.list())])
+      const [a, c, t] = await Promise.all([
+        call(api.apps.list()),
+        call(api.contacts.list()),
+        call(api.tags.list()),
+      ])
       if (!mounted.current) return
       setApps(a)
+      setContacts(c)
       setTags(t)
       setError(null)
     } catch (e) {
@@ -110,9 +131,65 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const createContact = useCallback(
+    async (input: NewContactInput) => {
+      const created = await call(api.contacts.create(input))
+      await refresh()
+      return created
+    },
+    [refresh],
+  )
+
+  const updateContact = useCallback(
+    async (id: string, patch: Partial<Contact>) => {
+      const updated = await call(api.contacts.update(id, patch))
+      setContacts((prev) => prev.map((c) => (c.id === id ? updated : c)))
+      void refresh()
+      return updated
+    },
+    [refresh],
+  )
+
+  const removeContact = useCallback(
+    async (id: string) => {
+      await call(api.contacts.remove(id))
+      await refresh()
+    },
+    [refresh],
+  )
+
+  const linkContact = useCallback(
+    async (appId: string, contactId: string) => {
+      const target = apps.find((a) => a.id === appId)
+      const next = Array.from(new Set([...(target?.contactIds ?? []), contactId]))
+      await call(api.apps.update(appId, { contactIds: next }))
+      await refresh()
+    },
+    [apps, refresh],
+  )
+
+  const unlinkContact = useCallback(
+    async (appId: string, contactId: string) => {
+      const target = apps.find((a) => a.id === appId)
+      const next = (target?.contactIds ?? []).filter((id) => id !== contactId)
+      await call(api.apps.update(appId, { contactIds: next }))
+      await refresh()
+    },
+    [apps, refresh],
+  )
+
+  const saveProfile = useCallback(
+    async (p: UserProfile) => {
+      await call(api.settings.setProfile(p))
+      await refreshMeta()
+    },
+    [refreshMeta],
+  )
+
   const value = useMemo<AppData>(
     () => ({
       apps,
+      contacts,
       tags,
       settings,
       usage,
@@ -123,8 +200,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       createApp,
       updateApp,
       removeApp,
+      createContact,
+      updateContact,
+      removeContact,
+      linkContact,
+      unlinkContact,
+      saveProfile,
     }),
-    [apps, tags, settings, usage, loading, error, refresh, refreshMeta, createApp, updateApp, removeApp],
+    [
+      apps, contacts, tags, settings, usage, loading, error, refresh, refreshMeta,
+      createApp, updateApp, removeApp, createContact, updateContact, removeContact,
+      linkContact, unlinkContact, saveProfile,
+    ],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

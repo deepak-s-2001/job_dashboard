@@ -5,7 +5,13 @@ import type { Application } from '@shared/types'
 import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, relDays, titleCase } from '@/lib/format'
 import { StatusPill } from './StatusControl'
 
-export const AppCard = memo(function AppCard({ app }: { app: Application }) {
+export const AppCard = memo(function AppCard({
+  app,
+  contactCount = 0,
+}: {
+  app: Application
+  contactCount?: number
+}) {
   const accent = ACCENT_HEX[app.accent]
   const skillCount =
     app.skills.required.length + app.skills.preferred.length + app.skills.industry.length
@@ -92,6 +98,14 @@ export const AppCard = memo(function AppCard({ app }: { app: Application }) {
               · {SOURCE_LABEL[app.sourceSite] ?? titleCase(app.sourceSite)}
             </div>
             <div className="flex flex-none items-center gap-1.5">
+              {contactCount > 0 && (
+                <span
+                  className="border-2 border-ink bg-accent-cyan px-2 py-0.5 text-[13px] font-bold"
+                  title={`${contactCount} contact${contactCount === 1 ? '' : 's'} in your network here`}
+                >
+                  ❋ {contactCount}
+                </span>
+              )}
               <span className="border-2 border-ink bg-ground px-2 py-0.5 text-[13px] font-bold">
                 {app.resumes.length} {app.resumes.length === 1 ? 'resume' : 'resumes'}
               </span>

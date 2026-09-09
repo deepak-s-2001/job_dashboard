@@ -19,6 +19,8 @@ import { Spinner, EmptyState, Divider } from '@/components/ui/misc'
 import { Tabs, TabList, Tab, TabPanel } from '@/components/ui/Tabs'
 import { ResumePane } from '@/components/ResumePane'
 import { JobPrompt } from '@/components/JobPrompt'
+import { JobNetwork } from '@/components/JobNetwork'
+import { contactsForJob } from '@/lib/company'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
@@ -30,7 +32,7 @@ export function Detail() {
   const [params] = useSearchParams()
   const toast = useToast()
   const confirm = useConfirm()
-  const { apps, tags, settings, refreshMeta, refresh } = useAppData()
+  const { apps, contacts, tags, settings, refreshMeta, refresh } = useAppData()
   const { query, filters, sort, narrowed } = useView()
 
   const [app, setApp] = useState<Application | null>(null)
@@ -165,6 +167,8 @@ export function Detail() {
   const accent = ACCENT_HEX[app.accent]
   const skillTotal =
     app.skills.required.length + app.skills.preferred.length + app.skills.industry.length
+  const net = contactsForJob(contacts, app)
+  const netCount = net.matched.length + net.linked.length
 
   return (
     <div className="flex h-full flex-col">
@@ -296,6 +300,9 @@ export function Detail() {
               <Tab value="tips" count={app.tailoringTips.length}>
                 Tips
               </Tab>
+              <Tab value="network" count={netCount}>
+                Network
+              </Tab>
               <Tab value="prompt">Prompt</Tab>
               <Tab value="notes">Notes</Tab>
               <Tab value="details">Details</Tab>
@@ -367,6 +374,14 @@ export function Detail() {
                 ) : (
                   <ExtractCta onRun={runExtraction} busy={extracting} hasKey={settings.hasApiKey} />
                 )}
+              </TabPanel>
+
+              <TabPanel value="network">
+                <p className="mb-3 text-[14px] text-muted">
+                  People who could refer you here. Anyone in your Network whose company matches
+                  shows up automatically.
+                </p>
+                <JobNetwork app={app} />
               </TabPanel>
 
               <TabPanel value="prompt">

@@ -8,11 +8,12 @@ import { TitleBar } from './TitleBar'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '▚', end: true },
+  { to: '/network', label: 'Network', icon: '❋' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { apps, usage, settings } = useAppData()
+  const { apps, contacts, usage, settings } = useAppData()
   const navigate = useNavigate()
 
   return (
@@ -69,6 +70,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
             <span className="font-semibold text-muted">Applications</span>
             <span className="font-bold">{apps.length}</span>
+          </div>
+          <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
+            <span className="font-semibold text-muted">Contacts</span>
+            <span className="font-bold">{contacts.length}</span>
           </div>
           <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
             <span className="font-semibold text-muted">AI spend</span>

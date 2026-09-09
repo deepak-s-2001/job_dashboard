@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppData } from '@/lib/store'
-import { initials } from '@/lib/format'
+import { initials, personInitials } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
 interface Item {
@@ -15,7 +15,7 @@ interface Item {
 
 export function CommandPalette() {
   const navigate = useNavigate()
-  const { apps } = useAppData()
+  const { apps, contacts } = useAppData()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
@@ -62,6 +62,7 @@ export function CommandPalette() {
     const base: Item[] = [
       { id: 'add', label: 'Add application', hint: 'from a job link', icon: '＋', run: go('/add') },
       { id: 'dash', label: 'Dashboard', icon: '▚', run: go('/') },
+      { id: 'network', label: 'Network', hint: 'contacts & referrals', icon: '❋', run: go('/network') },
       { id: 'settings', label: 'Settings', icon: '⚙', run: go('/settings') },
     ]
     const appItems: Item[] = apps.map((a) => ({
@@ -74,13 +75,23 @@ export function CommandPalette() {
         setOpen(false)
       },
     }))
+    const contactItems: Item[] = contacts.map((c) => ({
+      id: `contact-${c.id}`,
+      label: c.name,
+      hint: [c.title, c.company].filter(Boolean).join(' · ') || 'contact',
+      icon: personInitials(c.name),
+      run: () => {
+        navigate(`/network?c=${c.id}`)
+        setOpen(false)
+      },
+    }))
     const query = q.trim().toLowerCase()
-    const all = [...base, ...appItems]
+    const all = [...base, ...appItems, ...contactItems]
     if (!query) return all.slice(0, 8)
     return all
       .filter((i) => i.label.toLowerCase().includes(query) || i.hint?.toLowerCase().includes(query))
       .slice(0, 10)
-  }, [apps, q, navigate])
+  }, [apps, contacts, q, navigate])
 
   useEffect(() => {
     setActive((a) => Math.min(a, Math.max(0, items.length - 1)))
