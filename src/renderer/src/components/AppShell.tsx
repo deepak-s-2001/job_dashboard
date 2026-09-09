@@ -3,18 +3,23 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAppData } from '@/lib/store'
 import { cn } from '@/lib/cn'
 import { money } from '@/lib/format'
+import { isOverdue, isDueToday } from '@/lib/todo'
 import { Button } from './ui/Button'
 import { TitleBar } from './TitleBar'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '▚', end: true },
+  { to: '/todos', label: 'To-dos', icon: '✓' },
   { to: '/network', label: 'Network', icon: '❋' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { apps, contacts, usage, settings } = useAppData()
+  const { apps, contacts, todos, usage, settings } = useAppData()
   const navigate = useNavigate()
+
+  const openTodos = todos.filter((t) => !t.done).length
+  const pressingTodos = todos.filter((t) => isOverdue(t) || isDueToday(t)).length
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -33,24 +38,37 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-1.5 p-3">
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.end}
-              className={({ isActive }) =>
-                cn(
-                  'nb-focus flex items-center gap-2.5 border-3 border-ink rounded px-3 py-2 text-sm font-bold transition-transform',
-                  isActive
-                    ? 'bg-ink text-ground shadow-hard'
-                    : 'bg-surface text-ink hover:-translate-y-[1px] hover:shadow-hard',
-                )
-              }
-            >
-              <span className="text-base leading-none">{n.icon}</span>
-              {n.label}
-            </NavLink>
-          ))}
+          {NAV.map((n) => {
+            const badge = n.to === '/todos' && openTodos > 0 ? openTodos : null
+            return (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                end={n.end}
+                className={({ isActive }) =>
+                  cn(
+                    'nb-focus flex items-center gap-2.5 border-3 border-ink rounded px-3 py-2 text-sm font-bold transition-transform',
+                    isActive
+                      ? 'bg-ink text-ground shadow-hard'
+                      : 'bg-surface text-ink hover:-translate-y-[1px] hover:shadow-hard',
+                  )
+                }
+              >
+                <span className="text-base leading-none">{n.icon}</span>
+                {n.label}
+                {badge != null && (
+                  <span
+                    className={cn(
+                      'ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center border-2 border-ink px-1 text-[11px] font-bold text-ink',
+                      pressingTodos > 0 ? 'bg-accent-coral' : 'bg-accent-yellow',
+                    )}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            )
+          })}
         </nav>
 
         <div className="space-y-2 p-3">
@@ -74,6 +92,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
             <span className="font-semibold text-muted">Contacts</span>
             <span className="font-bold">{contacts.length}</span>
+          </div>
+          <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
+            <span className="font-semibold text-muted">To-do</span>
+            <span className="font-bold">{openTodos} open</span>
           </div>
           <div className="flex items-center justify-between border-2 border-ink bg-surface px-2 py-1">
             <span className="font-semibold text-muted">AI spend</span>

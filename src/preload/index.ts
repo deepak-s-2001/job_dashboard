@@ -8,10 +8,12 @@ import type {
   ExtractionResult,
   NewApplicationInput,
   NewContactInput,
+  NewTodoInput,
   Resume,
   ScrapedJob,
   Settings,
   TagDef,
+  Todo,
   UsageTotals,
   UserProfile,
 } from '../shared/types'
@@ -63,6 +65,12 @@ const api = {
     update: (id: string, patch: Partial<Contact>) =>
       invoke<Contact>(IPC.contactUpdate, id, patch),
     remove: (id: string) => invoke<boolean>(IPC.contactDelete, id),
+  },
+  todos: {
+    list: () => invoke<Todo[]>(IPC.todosList),
+    create: (input: NewTodoInput) => invoke<Todo>(IPC.todoCreate, input),
+    update: (id: string, patch: Partial<Todo>) => invoke<Todo>(IPC.todoUpdate, id, patch),
+    remove: (id: string) => invoke<boolean>(IPC.todoDelete, id),
   },
   settings: {
     get: () => invoke<Settings>(IPC.settingsGet),

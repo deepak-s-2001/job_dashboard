@@ -13,8 +13,10 @@ import type {
   Contact,
   NewApplicationInput,
   NewContactInput,
+  NewTodoInput,
   Settings,
   TagDef,
+  Todo,
   UsageTotals,
   UserProfile,
 } from '@shared/types'
@@ -24,6 +26,7 @@ import { api, call } from './api'
 interface AppData {
   apps: Application[]
   contacts: Contact[]
+  todos: Todo[]
   tags: TagDef[]
   settings: Settings
   usage: UsageTotals
@@ -39,6 +42,9 @@ interface AppData {
   removeContact: (id: string) => Promise<void>
   linkContact: (appId: string, contactId: string) => Promise<void>
   unlinkContact: (appId: string, contactId: string) => Promise<void>
+  createTodo: (input: NewTodoInput) => Promise<Todo>
+  updateTodo: (id: string, patch: Partial<Todo>) => Promise<Todo>
+  removeTodo: (id: string) => Promise<void>
   saveProfile: (p: UserProfile) => Promise<void>
 }
 
@@ -54,6 +60,7 @@ const DEFAULT_USAGE: UsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0, 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [apps, setApps] = useState<Application[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [todos, setTodos] = useState<Todo[]>([])
   const [tags, setTags] = useState<TagDef[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [usage, setUsage] = useState<UsageTotals>(DEFAULT_USAGE)
@@ -70,14 +77,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [a, c, t] = await Promise.all([
+      const [a, c, d, t] = await Promise.all([
         call(api.apps.list()),
         call(api.contacts.list()),
+        call(api.todos.list()),
         call(api.tags.list()),
       ])
       if (!mounted.current) return
       setApps(a)
       setContacts(c)
+      setTodos(d)
       setTags(t)
       setError(null)
     } catch (e) {
@@ -178,6 +187,33 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [apps, refresh],
   )
 
+  const createTodo = useCallback(
+    async (input: NewTodoInput) => {
+      const created = await call(api.todos.create(input))
+      await refresh()
+      return created
+    },
+    [refresh],
+  )
+
+  const updateTodo = useCallback(
+    async (id: string, patch: Partial<Todo>) => {
+      const updated = await call(api.todos.update(id, patch))
+      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      void refresh()
+      return updated
+    },
+    [refresh],
+  )
+
+  const removeTodo = useCallback(
+    async (id: string) => {
+      await call(api.todos.remove(id))
+      setTodos((prev) => prev.filter((t) => t.id !== id))
+    },
+    [],
+  )
+
   const saveProfile = useCallback(
     async (p: UserProfile) => {
       await call(api.settings.setProfile(p))
@@ -190,6 +226,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     () => ({
       apps,
       contacts,
+      todos,
       tags,
       settings,
       usage,
@@ -205,12 +242,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       removeContact,
       linkContact,
       unlinkContact,
+      createTodo,
+      updateTodo,
+      removeTodo,
       saveProfile,
     }),
     [
-      apps, contacts, tags, settings, usage, loading, error, refresh, refreshMeta,
+      apps, contacts, todos, tags, settings, usage, loading, error, refresh, refreshMeta,
       createApp, updateApp, removeApp, createContact, updateContact, removeContact,
-      linkContact, unlinkContact, saveProfile,
+      linkContact, unlinkContact, createTodo, updateTodo, removeTodo, saveProfile,
     ],
   )
 

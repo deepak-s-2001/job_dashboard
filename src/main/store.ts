@@ -16,7 +16,9 @@ import type {
   ExtractionModel,
   NewApplicationInput,
   NewContactInput,
+  NewTodoInput,
   TagDef,
+  Todo,
   UsageTotals,
   UserProfile,
 } from '@shared/types'
@@ -31,6 +33,7 @@ const defaultData: DBShape = {
   version: DB_VERSION,
   applications: [],
   contacts: [],
+  todos: [],
   tags: [],
   usage: { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 },
   settings: { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } },
@@ -81,7 +84,12 @@ function pruneBackups(): void {
 function backupKey(json: string): string {
   try {
     const j = JSON.parse(json) as DBShape
-    return JSON.stringify({ a: j.applications ?? [], c: j.contacts ?? [], t: j.tags ?? [] })
+    return JSON.stringify({
+      a: j.applications ?? [],
+      c: j.contacts ?? [],
+      d: j.todos ?? [],
+      t: j.tags ?? [],
+    })
   } catch {
     return json
   }
@@ -123,6 +131,7 @@ export async function initStore(): Promise<void> {
   db.data.version = DB_VERSION
   db.data.applications ??= []
   db.data.contacts ??= []
+  db.data.todos ??= []
   db.data.tags ??= []
   db.data.usage ??= { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
   db.data.settings ??= { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } }
@@ -189,6 +198,7 @@ export async function restoreBackup(name: string): Promise<number> {
   db.data.version = DB_VERSION
   db.data.applications = restored.applications ?? []
   db.data.contacts = restored.contacts ?? []
+  db.data.todos = restored.todos ?? []
   db.data.tags = restored.tags ?? []
   db.data.usage = restored.usage ?? db.data.usage
   db.data.settings = restored.settings ?? db.data.settings
@@ -338,6 +348,8 @@ export async function deleteApplication(id: string): Promise<void> {
   await db.flushNow() // make sure disk = current state …
   snapshot() // … then capture it before removing anything (content-deduped)
   db.data.applications = db.data.applications.filter((a) => a.id !== id)
+  // keep the tasks, drop the link
+  for (const t of db.data.todos) if (t.applicationId === id) t.applicationId = null
   await db.write()
 }
 
@@ -474,6 +486,57 @@ export async function deleteContact(id: string): Promise<void> {
   for (const a of db.data.applications) {
     if (a.contactIds?.includes(id)) a.contactIds = a.contactIds.filter((x) => x !== id)
   }
+  await db.write()
+}
+
+// ---------- to-dos ----------
+
+export function listTodos(): Todo[] {
+  return [...db.data.todos]
+}
+
+export function getTodo(id: string): Todo | undefined {
+  return db.data.todos.find((t) => t.id === id)
+}
+
+export async function createTodo(input: NewTodoInput): Promise<Todo> {
+  const text = (input.text ?? '').trim()
+  if (!text) throw new Error('A to-do needs some text.')
+  const ts = nowIso()
+  const todo: Todo = {
+    id: genId(12),
+    text,
+    done: false,
+    doneAt: null,
+    applicationId: input.applicationId ?? null,
+    dueDate: input.dueDate ?? null,
+    createdAt: ts,
+    updatedAt: ts,
+  }
+  db.data.todos.push(todo)
+  await db.write()
+  return todo
+}
+
+const TODO_FIELDS: (keyof Todo)[] = ['text', 'done', 'doneAt', 'applicationId', 'dueDate']
+
+export async function updateTodo(id: string, patch: Partial<Todo>): Promise<Todo | undefined> {
+  const t = db.data.todos.find((x) => x.id === id)
+  if (!t) return undefined
+  for (const key of TODO_FIELDS) {
+    if (key in patch && patch[key] !== undefined) {
+      // @ts-expect-error narrowed by the whitelist
+      t[key] = key === 'text' ? String(patch.text).trim() : patch[key]
+    }
+  }
+  if ('done' in patch) t.doneAt = patch.done ? nowIso() : null
+  t.updatedAt = nowIso()
+  await db.write()
+  return t
+}
+
+export async function deleteTodo(id: string): Promise<void> {
+  db.data.todos = db.data.todos.filter((t) => t.id !== id)
   await db.write()
 }
 

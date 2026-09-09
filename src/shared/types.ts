@@ -177,6 +177,27 @@ export interface TagDef {
   color: string
 }
 
+// ---------- To-dos ----------
+
+export interface Todo {
+  id: string
+  text: string
+  done: boolean
+  doneAt: string | null
+  /** null = standalone; otherwise the job this task belongs to */
+  applicationId: string | null
+  /** 'YYYY-MM-DD' or null */
+  dueDate: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NewTodoInput {
+  text: string
+  applicationId?: string | null
+  dueDate?: string | null
+}
+
 export interface UsageTotals {
   calls: number
   inputTokens: number
@@ -194,6 +215,7 @@ export interface DBShape {
   version: number
   applications: Application[]
   contacts: Contact[]
+  todos: Todo[]
   tags: TagDef[]
   usage: UsageTotals
   settings: { extractionModel: ExtractionModel; profile: UserProfile }

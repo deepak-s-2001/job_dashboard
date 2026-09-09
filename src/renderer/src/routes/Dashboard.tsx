@@ -20,7 +20,7 @@ function readCollapsed(): boolean {
 }
 
 export function Dashboard() {
-  const { apps, contacts, loading, error } = useAppData()
+  const { apps, contacts, todos, loading, error } = useAppData()
   const { query, setQuery, filters, setFilters, sort, setSort } = useView()
   const [railCollapsed, setRailCollapsed] = useState(readCollapsed)
 
@@ -76,7 +76,7 @@ export function Dashboard() {
         <div className="min-w-0 flex-1 overflow-y-auto nb-scroll p-6">
           {apps.length > 0 && (
             <div className="mb-5">
-              <StatsStrip apps={apps} />
+              <StatsStrip apps={apps} todos={todos} />
             </div>
           )}
 

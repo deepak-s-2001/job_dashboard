@@ -9,7 +9,9 @@ import type {
   ExtractionModel,
   NewApplicationInput,
   NewContactInput,
+  NewTodoInput,
   TagDef,
+  Todo,
   UserProfile,
 } from '@shared/types'
 import {
@@ -27,6 +29,10 @@ import {
   createContact,
   updateContact,
   deleteContact,
+  listTodos,
+  createTodo,
+  updateTodo,
+  deleteTodo,
   getProfile,
   setProfile,
   getModel,
@@ -182,6 +188,18 @@ export function registerIpc(): void {
     }),
   )
   ipcMain.handle(IPC.contactDelete, (_e, id: string) => guard(() => deleteContact(id).then(() => true)))
+
+  // ---------- to-dos ----------
+  ipcMain.handle(IPC.todosList, () => ok(listTodos()))
+  ipcMain.handle(IPC.todoCreate, (_e, input: NewTodoInput) => guard(() => createTodo(input)))
+  ipcMain.handle(IPC.todoUpdate, (_e, id: string, patch: Partial<Todo>) =>
+    guard(async () => {
+      const updated = await updateTodo(id, patch)
+      if (!updated) throw new Error('To-do not found.')
+      return updated
+    }),
+  )
+  ipcMain.handle(IPC.todoDelete, (_e, id: string) => guard(() => deleteTodo(id).then(() => true)))
 
   // ---------- settings / secrets / misc ----------
   ipcMain.handle(IPC.settingsGet, () =>

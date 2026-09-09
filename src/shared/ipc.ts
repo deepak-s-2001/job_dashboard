@@ -31,6 +31,12 @@ export const IPC = {
   contactUpdate: 'contacts:update',
   contactDelete: 'contacts:delete',
 
+  // to-dos
+  todosList: 'todos:list',
+  todoCreate: 'todos:create',
+  todoUpdate: 'todos:update',
+  todoDelete: 'todos:delete',
+
   // settings / secrets / misc
   settingsGet: 'settings:get',
   settingsSetModel: 'settings:setModel',

@@ -24,6 +24,7 @@ calls are to the job site you paste (to read the posting) and — only when you 
 - [First run](#first-run)
 - [How it works](#how-it-works)
 - [Network & referrals](#network--referrals)
+- [To-dos](#to-dos)
 - [Using it](#using-it)
 - [Your data & privacy](#your-data--privacy)
 - [Tech stack](#tech-stack)
@@ -141,8 +142,8 @@ mark one primary. The viewer renders the real PDF exactly (via pdf.js), page by 
 ![Detail view](docs/detail.png)
 
 Each job has a detail view with the resume beside tabs for **Description · Skills · Insights ·
-Tips · Network · Prompt · Notes · Details**. Page between jobs with the arrows (or `[` / `]`),
-and the paging respects whatever search or filter you had on the board.
+Tips · Network · To-dos · Prompt · Notes · Details**. Page between jobs with the arrows (or
+`[` / `]`), and the paging respects whatever search or filter you had on the board.
 
 ### The "Prompt" tab
 
@@ -203,6 +204,27 @@ person's time, with a genuine way for them to say no.
 
 ---
 
+## To-dos
+
+![To-dos](docs/todos.png)
+
+A lightweight task list for the work *around* the applications — "tailor resume for Acme",
+"follow up with the recruiter", "prep for Thursday". Every to-do can stand alone or be
+**attached to a job**.
+
+- The **To-dos** sidebar tab is the combined list, grouped **Overdue · Today · This week ·
+  Later · No date** (and a collapsed **Done**). Quick-add at the top with `Today` / `Tomorrow`
+  / `+1 wk` chips or a date picker; filter by job; tick *show done* to review what's finished.
+- Each job's **To-dos** tab shows just that job's tasks, plus **suggested next steps** for its
+  current status — "Prep for the interview" when it's *Interviewing*, "Follow up in a week"
+  when *Applied*. Click a suggestion to add it; nothing is created on its own.
+- The sidebar badge and a dashboard tile show how many are **overdue or due today**.
+
+**This is visual only** — grouping and colour are the whole nudge. There are no pop-ups, no
+OS notifications, ever.
+
+---
+
 ## Using it
 
 | Feature | How |
@@ -214,6 +236,8 @@ person's time, with a genuine way for them to say no.
 | Track status | Per job: **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted / Withdrawn**. New jobs start **Not applied**; flip to **Applied** when you submit and it stamps the date. |
 | Tag jobs | Free-text tags with colours (e.g. `dream`, `referral`) |
 | Fill Workday's skills field | Job → **Skills** tab → **Paste into Workday** — *Copy next* → paste → pick the match → repeat |
+| Add a to-do | **To-dos** tab (or a job's **To-dos** tab) → type, press Enter. Add a due date with the chips or the picker. |
+| Track what's next per job | A job's **To-dos** tab → click a **suggested** step, or add your own |
 | Add a contact | **Network → Add contact**, or `Ctrl`+`K` |
 | See who can refer you | A job's **Network** tab — contacts at that company appear automatically; link others by hand |
 | Draft a referral email | **Draft email** on any contact → edit → **Copy** or **Open in mail app** |
@@ -231,7 +255,7 @@ Everything lives in one folder in your Windows profile:
 
 ```
 %APPDATA%\job-dashboard\
-├─ db.json                  applications + contacts + your sign-off details (plain JSON)
+├─ db.json                  applications + contacts + to-dos + your sign-off (plain JSON)
 ├─ resumes\<job-id>\*.pdf   copies of the resumes you attached
 ├─ backups\db-*.json        automatic snapshots of db.json (last 20)
 └─ secrets.bin              your Anthropic API key, encrypted by Windows (DPAPI)
