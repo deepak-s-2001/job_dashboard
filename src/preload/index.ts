@@ -26,6 +26,8 @@ const api = {
     list: () => invoke<Application[]>(IPC.appsList),
     get: (id: string) => invoke<Application>(IPC.appGet, id),
     create: (input: NewApplicationInput) => invoke<Application>(IPC.appCreate, input),
+    createBulk: (inputs: NewApplicationInput[]) =>
+      invoke<Application[]>(IPC.appCreateBulk, inputs),
     update: (id: string, patch: Partial<Application>) =>
       invoke<Application>(IPC.appUpdate, id, patch),
     remove: (id: string) => invoke<boolean>(IPC.appDelete, id),

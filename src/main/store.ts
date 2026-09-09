@@ -230,11 +230,28 @@ export function getApplication(id: string): Application | undefined {
   return db.data.applications.find((a) => a.id === id)
 }
 
-export async function createApplication(input: NewApplicationInput): Promise<Application> {
+/** Loose URL identity for dedup: no protocol, query, hash or trailing slash. */
+export function normalizeUrl(url: string): string {
+  const s = (url ?? '').trim()
+  if (!s) return ''
+  try {
+    const u = new URL(s)
+    return (u.host + u.pathname).replace(/\/+$/, '').toLowerCase()
+  } catch {
+    return s.replace(/^https?:\/\//i, '').split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase()
+  }
+}
+
+export function findApplicationByUrl(url: string): Application | undefined {
+  const key = normalizeUrl(url)
+  if (!key) return undefined
+  return db.data.applications.find((a) => a.url && normalizeUrl(a.url) === key)
+}
+
+function buildApplication(input: NewApplicationInput, ts: string): Application {
   const id = genId(12)
-  const ts = nowIso()
   const ex = input.extraction
-  const application: Application = {
+  return {
     id,
     url: input.url,
     sourceSite: input.sourceSite,
@@ -270,10 +287,31 @@ export async function createApplication(input: NewApplicationInput): Promise<App
     createdAt: ts,
     updatedAt: ts,
   }
+}
+
+export async function createApplication(input: NewApplicationInput): Promise<Application> {
+  const application = buildApplication(input, nowIso())
   db.data.applications.push(application)
   await registerTags(application.tags)
   await db.write()
   return application
+}
+
+/** Create many at once — one disk write, one tag pass. Skips rows with no company or role. */
+export async function bulkCreateApplications(
+  inputs: NewApplicationInput[],
+): Promise<Application[]> {
+  const ts = nowIso()
+  const created: Application[] = []
+  for (const input of inputs) {
+    if (!input.company?.trim() && !input.roleTitle?.trim()) continue
+    const app_ = buildApplication(input, ts)
+    db.data.applications.push(app_)
+    created.push(app_)
+  }
+  await registerTags(created.flatMap((a) => a.tags))
+  await db.write()
+  return created
 }
 
 const MUTABLE_FIELDS: (keyof Application)[] = [

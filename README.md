@@ -117,6 +117,10 @@ date, salary range, and the full description** — all editable before you save.
 > LinkedIn sometimes needs you signed in. **Settings → Log in to LinkedIn** opens a window
 > whose session is remembered and reused for future LinkedIn links.
 
+**Already tracking applications elsewhere?** Sidebar **Import** takes either a list of job
+links (one per line — each is scraped, duplicates skipped) or a pasted CSV / spreadsheet /
+Huntr-or-Teal export, with a column mapper. No AI, no Extract.
+
 ### 2. Save — with or without AI
 
 - **Extract & Save** — makes **one** call to Claude with just the description text. It returns:
@@ -230,6 +234,7 @@ OS notifications, ever.
 | Feature | How |
 |---|---|
 | Add a job | **Add application** in the sidebar, or `Ctrl`+`K` → "Add" |
+| Import in bulk | Sidebar **Import** → paste many job links (each is scraped), or paste a CSV / Huntr / Teal export and map the columns |
 | Search | The search box in the **Find** panel — fuzzy match across company, role, skills, description, notes |
 | Filter | **Find** panel — status, employment type, workplace, applied-date range, tag, source board, "has a resume", "AI-extracted" |
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |

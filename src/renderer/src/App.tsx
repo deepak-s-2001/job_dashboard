@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell'
 import { CommandPalette } from './components/CommandPalette'
 import { Dashboard } from './routes/Dashboard'
 import { AddApplication } from './routes/Add'
+import { Import } from './routes/Import'
 import { Detail } from './routes/Detail'
 import { Network } from './routes/Network'
 import { Todos } from './routes/Todos'
@@ -30,6 +31,7 @@ export function App() {
             <Routes location={location}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/add" element={<AddApplication />} />
+              <Route path="/import" element={<Import />} />
               <Route path="/app/:id" element={<Detail />} />
               <Route path="/todos" element={<Todos />} />
               <Route path="/network" element={<Network />} />

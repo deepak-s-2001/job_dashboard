@@ -12,6 +12,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test": "vitest run",
     "dist": "electron-vite build && electron-builder --win --config electron-builder.yml",
     "dist:dir": "electron-vite build && electron-builder --win --dir --config electron-builder.yml"
   },
@@ -27,7 +28,8 @@
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vite": "^7.3.6"
+    "vite": "^7.3.6",
+    "vitest": "^5.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

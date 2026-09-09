@@ -5,6 +5,7 @@ export const IPC = {
   appsList: 'apps:list',
   appGet: 'apps:get',
   appCreate: 'apps:create',
+  appCreateBulk: 'apps:createBulk',
   appUpdate: 'apps:update',
   appDelete: 'apps:delete',
 

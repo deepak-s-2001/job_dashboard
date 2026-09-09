@@ -35,6 +35,7 @@ interface AppData {
   refresh: () => Promise<void>
   refreshMeta: () => Promise<void>
   createApp: (input: NewApplicationInput) => Promise<Application>
+  createAppsBulk: (inputs: NewApplicationInput[]) => Promise<Application[]>
   updateApp: (id: string, patch: Partial<Application>) => Promise<Application>
   removeApp: (id: string) => Promise<void>
   createContact: (input: NewContactInput) => Promise<Contact>
@@ -116,6 +117,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const createApp = useCallback(
     async (input: NewApplicationInput) => {
       const created = await call(api.apps.create(input))
+      await refresh()
+      return created
+    },
+    [refresh],
+  )
+
+  const createAppsBulk = useCallback(
+    async (inputs: NewApplicationInput[]) => {
+      const created = await call(api.apps.createBulk(inputs))
       await refresh()
       return created
     },
@@ -235,6 +245,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       refresh,
       refreshMeta,
       createApp,
+      createAppsBulk,
       updateApp,
       removeApp,
       createContact,
@@ -249,8 +260,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }),
     [
       apps, contacts, todos, tags, settings, usage, loading, error, refresh, refreshMeta,
-      createApp, updateApp, removeApp, createContact, updateContact, removeContact,
-      linkContact, unlinkContact, createTodo, updateTodo, removeTodo, saveProfile,
+      createApp, createAppsBulk, updateApp, removeApp, createContact, updateContact,
+      removeContact, linkContact, unlinkContact, createTodo, updateTodo, removeTodo, saveProfile,
     ],
   )
 

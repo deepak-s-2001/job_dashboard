@@ -61,6 +61,7 @@ export function CommandPalette() {
     }
     const base: Item[] = [
       { id: 'add', label: 'Add application', hint: 'from a job link', icon: '＋', run: go('/add') },
+      { id: 'import', label: 'Import applications', hint: 'links or a CSV', icon: '⇊', run: go('/import') },
       { id: 'dash', label: 'Dashboard', icon: '▚', run: go('/') },
       { id: 'todos', label: 'To-dos', hint: 'tasks & follow-ups', icon: '✓', run: go('/todos') },
       { id: 'network', label: 'Network', hint: 'contacts & referrals', icon: '❋', run: go('/network') },

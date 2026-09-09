@@ -16,6 +16,7 @@ import type {
 } from '@shared/types'
 import {
   createApplication,
+  bulkCreateApplications,
   deleteApplication,
   getApplication,
   listApplications,
@@ -81,6 +82,10 @@ export function registerIpc(): void {
 
   ipcMain.handle(IPC.appCreate, (_e, input: NewApplicationInput) =>
     guard(() => createApplication(input)),
+  )
+
+  ipcMain.handle(IPC.appCreateBulk, (_e, inputs: NewApplicationInput[]) =>
+    guard(() => bulkCreateApplications(inputs)),
   )
 
   ipcMain.handle(IPC.appUpdate, (_e, id: string, patch: Partial<Application>) =>
