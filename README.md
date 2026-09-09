@@ -127,6 +127,9 @@ date, salary range, and the full description** — all editable before you save.
 - **Save without AI** — 0 API calls; just stores the scraped facts and the description. You
   can run extraction later from the job's detail view.
 
+The **Skills** tab shows those skills as chips, and — at the bottom — a **Paste into Workday**
+box (see [Filling Workday's skills field](#filling-workdays-skills-field)).
+
 ### 3. Attach the resume you sent
 
 Drag the PDF onto the job (or pick a file). It's **copied** into the app's data folder — your
@@ -138,8 +141,8 @@ mark one primary. The viewer renders the real PDF exactly (via pdf.js), page by 
 ![Detail view](docs/detail.png)
 
 Each job has a detail view with the resume beside tabs for **Description · Skills · Insights ·
-Tips · Prompt · Notes · Details**. Page between jobs with the arrows (or `[` / `]`), and the
-paging respects whatever search or filter you had on the board.
+Tips · Network · Prompt · Notes · Details**. Page between jobs with the arrows (or `[` / `]`),
+and the paging respects whatever search or filter you had on the board.
 
 ### The "Prompt" tab
 
@@ -150,6 +153,21 @@ in a proper structure. Paste it into Claude or ChatGPT with your master resume a
 back a fit analysis, a skill-by-skill coverage table (every JD requirement mapped to real
 experience or flagged as a gap), and line-by-line edits — with rules that forbid inventing
 anything.
+
+### Filling Workday's skills field
+
+![Paste into Workday](docs/workday-skills.png)
+
+Workday's "Skills" input is a typeahead against Workday's own skill taxonomy — its search box
+takes a pasted `Python, AWS, CI/CD` as **one** skill, so a comma list is useless. The bottom of
+the **Skills** tab has a **Paste into Workday** box that fixes this, with **no AI**:
+
+- every extracted skill (required + preferred + industry, de-duplicated) as a one-per-line
+  block with a **Copy all** button — the format the ATSs that choke on commas do split;
+- **click any single skill** to copy just that one and mark it done, with a `3 / 15` progress
+  counter — for the Workday tenants where you must pick each skill from the dropdown by hand;
+- **toggle chips off** to trim the list (Workday recommends 8–15), and edit the text box
+  directly before copying.
 
 ---
 
@@ -194,6 +212,7 @@ person's time, with a genuine way for them to say no.
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |
 | Track status | Per job: **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted / Withdrawn**. New jobs start **Not applied**; flip to **Applied** when you submit and it stamps the date. |
 | Tag jobs | Free-text tags with colours (e.g. `dream`, `referral`) |
+| Fill Workday's skills field | Job → **Skills** tab → **Paste into Workday** — one-per-line block, or click each skill to copy it singly |
 | Add a contact | **Network → Add contact**, or `Ctrl`+`K` |
 | See who can refer you | A job's **Network** tab — contacts at that company appear automatically; link others by hand |
 | Draft a referral email | **Draft email** on any contact → edit → **Copy** or **Open in mail app** |

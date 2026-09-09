@@ -1,18 +1,6 @@
-import { useState } from 'react'
 import { cn } from '@/lib/cn'
+import { useCopy } from '@/lib/useCopy'
 import { Highlighted, stripMarkers } from './Highlighted'
-
-function useCopy() {
-  const [copied, setCopied] = useState(false)
-  return {
-    copied,
-    copy: async (text: string) => {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
-    },
-  }
-}
 
 export function SkillGroup({
   title,

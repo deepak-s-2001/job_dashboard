@@ -22,6 +22,7 @@ import { JobPrompt } from '@/components/JobPrompt'
 import { JobNetwork } from '@/components/JobNetwork'
 import { contactsForJob } from '@/lib/company'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
+import { WorkdaySkillsBox } from '@/components/WorkdaySkillsBox'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
 import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, titleCase, todayIso } from '@/lib/format'
@@ -348,6 +349,7 @@ export function Detail() {
                         Seniority read: <strong className="text-ink">{app.seniority}</strong>
                       </p>
                     )}
+                    <WorkdaySkillsBox skills={app.skills} />
                   </>
                 ) : (
                   <ExtractCta onRun={runExtraction} busy={extracting} hasKey={settings.hasApiKey} />
