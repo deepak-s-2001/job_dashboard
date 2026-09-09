@@ -1,10 +1,9 @@
 {
   "name": "job-dashboard",
   "version": "0.1.0",
-  "description": "Personal offline dashboard for documenting job applications, their JDs, extracted skills, and attached resumes.",
+  "description": "Offline desktop app for documenting job applications — the JD, extracted skills, tailoring notes, and the resume you sent.",
   "author": "Deepak S",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",

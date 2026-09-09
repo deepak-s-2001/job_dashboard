@@ -1,13 +1,13 @@
 # Job Dashboard
 
-A personal, offline **Windows desktop app** for documenting every job application you send:
-the job link, the description, the company, the skills the JD asks for, notes to remember when
-tailoring your resume, and the resume PDF(s) you actually attached — all browsable on one
-colourful board with search and filters.
+An offline **Windows desktop app** for documenting every job application you send: the job link,
+the description, the company, the skills the JD asks for, notes to remember when tailoring your
+resume, and the resume PDF(s) you actually attached — all browsable on one colourful board with
+search and filters.
 
-Built with Electron + React + TypeScript. Your data is a single local `db.json` plus the resume
-files; nothing is uploaded anywhere except one optional call to the Anthropic API when you ask
-for extraction.
+Built with Electron + React + TypeScript. Your data stays on your machine — a single local
+`db.json` plus your resume files. The only outbound request is one optional call to the
+Anthropic API, and only when you press **Extract**.
 
 ## The flow
 
@@ -108,3 +108,7 @@ src/preload/    typed contextBridge API (window.api)
 src/renderer/   React SPA — routes, neobrutalist component set, Fuse.js search, pdf.js viewer
 src/shared/     types + IPC channel names, imported by both sides
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE). Do whatever you want with it; no warranty.
