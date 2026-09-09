@@ -22,30 +22,26 @@ function masterList(skills: ApplicationSkills): string[] {
 }
 
 /**
- * "Paste into Workday" — Workday's skill field is a taxonomy typeahead whose
- * search box takes a pasted comma list as ONE skill. This turns the extracted
- * skills into a newline-delimited block (which the tenants that choke on commas
- * do split), plus a click-to-copy-one mode with progress tracking for tenants
- * where every skill must be picked from the dropdown by hand.
+ * "Paste into Workday" — Workday's skill field is a taxonomy typeahead. Its
+ * search box merges ANY pasted text (commas *or* newlines) into a single skill,
+ * so there is no bulk paste. The only thing that works is one skill at a time:
+ * copy → paste → pick the dropdown match → repeat. This drives that loop with a
+ * "Copy next" button + progress, and keeps a plain newline list as a fallback
+ * for other ATSs (Greenhouse/Lever/Ashby) whose fields *do* split on newlines.
  */
 export function WorkdaySkillsBox({ skills }: { skills: ApplicationSkills }) {
   const master = useMemo(() => masterList(skills), [skills])
   const [removed, setRemoved] = useState<Set<string>>(new Set())
   const [done, setDone] = useState<Set<string>>(new Set())
+  const [justCopied, setJustCopied] = useState<string | null>(null)
+  const [showList, setShowList] = useState(false)
   const [text, setText] = useState('')
-  const { copied, copy } = useCopy()
-  const [flash, setFlash] = useState<string | null>(null)
+  const list = useCopy()
 
-  const included = useMemo(
-    () => master.filter((s) => !removed.has(key(s))),
-    [master, removed],
-  )
-  const removedList = useMemo(
-    () => master.filter((s) => removed.has(key(s))),
-    [master, removed],
-  )
+  const included = useMemo(() => master.filter((s) => !removed.has(key(s))), [master, removed])
+  const removedList = useMemo(() => master.filter((s) => removed.has(key(s))), [master, removed])
+  const next = included.find((s) => !done.has(key(s))) ?? null
 
-  // re-seed the editable box whenever the chip set changes
   const seed = included.join('\n')
   useEffect(() => setText(seed), [seed])
 
@@ -53,23 +49,22 @@ export function WorkdaySkillsBox({ skills }: { skills: ApplicationSkills }) {
 
   function toggleRemoved(s: string) {
     setRemoved((prev) => {
-      const next = new Set(prev)
-      if (next.has(key(s))) next.delete(key(s))
-      else next.add(key(s))
-      return next
+      const n = new Set(prev)
+      if (n.has(key(s))) n.delete(key(s))
+      else n.add(key(s))
+      return n
     })
   }
 
-  async function copyOne(s: string) {
+  async function markCopied(s: string) {
     await navigator.clipboard.writeText(s).catch(() => {})
     setDone((prev) => new Set(prev).add(key(s)))
-    setFlash(key(s))
-    setTimeout(() => setFlash((f) => (f === key(s) ? null : f)), 1000)
+    setJustCopied(s)
+    setTimeout(() => setJustCopied((j) => (j === s ? null : j)), 1400)
   }
 
-  const count = included.length
-  const hint =
-    count < 8 ? 'Workday works best with 8–15' : count > 15 ? `${count} is a lot — Workday suggests 8–15` : null
+  const total = included.length
+  const doneCount = included.filter((s) => done.has(key(s))).length
 
   return (
     <div className="border-3 border-ink bg-ground rounded p-4">
@@ -78,55 +73,69 @@ export function WorkdaySkillsBox({ skills }: { skills: ApplicationSkills }) {
           Paste into Workday
         </h4>
         <span className="border-2 border-ink bg-surface px-1.5 text-[12px] font-bold">
-          {count} skill{count === 1 ? '' : 's'}
+          {doneCount} / {total} added
         </span>
-        {hint && <span className="text-[12px] font-semibold text-muted">{hint}</span>}
-        {done.size > 0 && (
-          <span className="ml-auto text-[12px] font-bold text-muted">
-            {done.size} / {count} copied ·{' '}
-            <button onClick={() => setDone(new Set())} className="underline hover:text-ink">
-              reset
-            </button>
-          </span>
+        {doneCount > 0 && (
+          <button
+            onClick={() => setDone(new Set())}
+            className="text-[12px] font-bold text-muted underline hover:text-ink"
+          >
+            reset
+          </button>
         )}
       </div>
 
       <p className="mb-3 text-[13px] leading-relaxed text-muted">
-        Workday's skill box doesn't split on commas. Paste this block, or click a skill to copy
-        it on its own and pick it from Workday's dropdown.
+        Workday merges any pasted list into one skill — commas or line breaks. Add them{' '}
+        <strong className="text-ink">one at a time</strong>: hit <em>Copy next</em>, paste into
+        Workday's skill box, pick the match from its dropdown, repeat.
       </p>
 
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {included.map((s) => (
-          <span
-            key={s}
-            className={cn(
-              'group inline-flex items-center border-2 border-ink text-[13px] font-semibold',
-              done.has(key(s)) ? 'bg-accent-lime' : 'bg-surface',
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => copyOne(s)}
-              title="Copy just this skill"
-              className="nb-focus px-2 py-1"
+      {next ? (
+        <Button variant="primary" onClick={() => markCopied(next)}>
+          {justCopied ? `✓ copied "${justCopied}"` : 'Copy next'}
+          {!justCopied && <span className="ml-1.5 font-normal opacity-90">— {next}</span>}
+        </Button>
+      ) : (
+        <div className="border-2 border-ink bg-accent-lime px-3 py-1.5 text-[13px] font-bold">
+          All {total} skills copied ✓
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {included.map((s) => {
+          const isDone = done.has(key(s))
+          return (
+            <span
+              key={s}
+              className={cn(
+                'inline-flex items-center border-2 border-ink text-[13px] font-semibold',
+                isDone ? 'bg-accent-lime text-ink/60' : 'bg-surface',
+              )}
             >
-              {flash === key(s) ? 'copied ✓' : done.has(key(s)) ? `${s} ✓` : s}
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleRemoved(s)}
-              aria-label={`Remove ${s}`}
-              className="nb-focus border-l-2 border-ink px-1.5 py-1 text-ink/60 hover:bg-accent-coral hover:text-ink"
-            >
-              ×
-            </button>
-          </span>
-        ))}
+              <button
+                type="button"
+                onClick={() => markCopied(s)}
+                title="Copy this skill"
+                className="nb-focus px-2 py-1"
+              >
+                {isDone ? `${s} ✓` : s}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleRemoved(s)}
+                aria-label={`Remove ${s}`}
+                className="nb-focus border-l-2 border-ink px-1.5 py-1 text-ink/60 hover:bg-accent-coral hover:text-ink"
+              >
+                ×
+              </button>
+            </span>
+          )
+        })}
       </div>
 
       {removedList.length > 0 && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span className="text-[12px] font-bold uppercase tracking-wide text-muted">off:</span>
           {removedList.map((s) => (
             <button
@@ -141,20 +150,30 @@ export function WorkdaySkillsBox({ skills }: { skills: ApplicationSkills }) {
         </div>
       )}
 
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={Math.min(Math.max(included.length, 3) + 1, 14)}
-        spellCheck={false}
-        className="font-mono text-[13px]"
-        aria-label="Skills, one per line"
-      />
-
-      <div className="mt-2.5">
-        <Button variant="primary" onClick={() => copy(text)}>
-          {copied ? 'Copied ✓' : 'Copy all — one per line'}
-        </Button>
-      </div>
+      <button
+        onClick={() => setShowList((v) => !v)}
+        className="mt-3 text-[12px] font-bold text-muted underline hover:text-ink"
+      >
+        {showList ? 'hide' : 'show'} plain list — for Greenhouse / Lever / Ashby
+      </button>
+      {showList && (
+        <div className="mt-2">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={Math.min(Math.max(included.length, 3) + 1, 14)}
+            spellCheck={false}
+            className="font-mono text-[13px]"
+            aria-label="Skills, one per line"
+          />
+          <Button className="mt-2" onClick={() => list.copy(text)}>
+            {list.copied ? 'Copied ✓' : 'Copy list (one per line)'}
+          </Button>
+          <p className="mt-1 text-[12px] text-muted">
+            Those ATS skill boxes split on line breaks. Workday does not.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

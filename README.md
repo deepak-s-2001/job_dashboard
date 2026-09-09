@@ -158,16 +158,17 @@ anything.
 
 ![Paste into Workday](docs/workday-skills.png)
 
-Workday's "Skills" input is a typeahead against Workday's own skill taxonomy — its search box
-takes a pasted `Python, AWS, CI/CD` as **one** skill, so a comma list is useless. The bottom of
-the **Skills** tab has a **Paste into Workday** box that fixes this, with **no AI**:
+Workday's "Skills" input is a typeahead against Workday's own taxonomy, and its search box
+**merges any paste — commas *or* line breaks — into a single skill**. There is no bulk paste;
+the only thing that works is one skill at a time. The bottom of the **Skills** tab has a
+**Paste into Workday** box that drives that loop, with **no AI**:
 
-- every extracted skill (required + preferred + industry, de-duplicated) as a one-per-line
-  block with a **Copy all** button — the format the ATSs that choke on commas do split;
-- **click any single skill** to copy just that one and mark it done, with a `3 / 15` progress
-  counter — for the Workday tenants where you must pick each skill from the dropdown by hand;
-- **toggle chips off** to trim the list (Workday recommends 8–15), and edit the text box
-  directly before copying.
+- **Copy next** copies the next skill and advances — paste it into Workday, pick the match from
+  the dropdown, hit *Copy next* again. A `4 / 13 added` counter tracks progress.
+- Or click any individual chip to copy that one skill out of order.
+- **Toggle chips off** to trim the list (Workday recommends 8–15).
+- A collapsed **plain list** (one per line) is there for Greenhouse / Lever / Ashby, whose
+  skill fields *do* split on line breaks.
 
 ---
 
@@ -212,7 +213,7 @@ person's time, with a genuine way for them to say no.
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |
 | Track status | Per job: **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted / Withdrawn**. New jobs start **Not applied**; flip to **Applied** when you submit and it stamps the date. |
 | Tag jobs | Free-text tags with colours (e.g. `dream`, `referral`) |
-| Fill Workday's skills field | Job → **Skills** tab → **Paste into Workday** — one-per-line block, or click each skill to copy it singly |
+| Fill Workday's skills field | Job → **Skills** tab → **Paste into Workday** — *Copy next* → paste → pick the match → repeat |
 | Add a contact | **Network → Add contact**, or `Ctrl`+`K` |
 | See who can refer you | A job's **Network** tab — contacts at that company appear automatically; link others by hand |
 | Draft a referral email | **Draft email** on any contact → edit → **Copy** or **Open in mail app** |
