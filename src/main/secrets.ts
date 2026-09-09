@@ -16,11 +16,15 @@ export function setApiKey(key: string): void {
   }
   const path = secretsPath()
   if (safeStorage.isEncryptionAvailable()) {
-    writeFileSync(path, safeStorage.encryptString(trimmed))
+    writeFileSync(path, safeStorage.encryptString(trimmed), { mode: 0o600 })
   } else {
-    // Fallback: still keep it off the renderer and out of the db.json,
-    // but note it is not OS-encrypted on this machine.
-    writeFileSync(path, Buffer.from('plain:' + trimmed, 'utf8'))
+    // Fallback for a machine with no OS keyring (rare on Windows/macOS; can
+    // happen on a headless Linux login). The key still never reaches the
+    // renderer or db.json, but it is NOT encrypted at rest here.
+    console.warn(
+      '[secrets] OS encryption unavailable — API key stored unencrypted at ' + path,
+    )
+    writeFileSync(path, Buffer.from('plain:' + trimmed, 'utf8'), { mode: 0o600 })
   }
 }
 

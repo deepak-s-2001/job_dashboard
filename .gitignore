@@ -4,7 +4,15 @@ release/
 dist/
 *.log
 .env
-.env.local
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db
+*.tsbuildinfo
 src/renderer/src/**/*.timestamp-*
+
+# never commit runtime user data if it ever lands in the tree
+db.json
+secrets.bin
+backups/
+resumes/

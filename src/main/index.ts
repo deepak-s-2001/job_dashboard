@@ -5,15 +5,24 @@ import { initStore, shutdownStore } from './store'
 import { registerIpc } from './ipc'
 import { scrapeUrl } from './scraper'
 
+const isDev = !app.isPackaged
+
+// Debug/test hooks (screenshotting, scripted eval, scrape probe, data-dir
+// redirect) are dev-only. Gating them keeps arbitrary-JS and data-path overrides
+// out of the shipped binary, where an attacker who could set env vars would
+// otherwise get code execution in the renderer.
+const SMOKE = isDev ? process.env['SMOKE'] : undefined
+const SMOKE_SCRAPE = isDev ? process.env['SMOKE_SCRAPE'] : undefined
+const SMOKE_HASH = isDev ? process.env['SMOKE_HASH'] : undefined
+const SMOKE_EVAL = isDev ? process.env['SMOKE_EVAL'] : undefined
+
 // --- data location safety -------------------------------------------------
 // Real user data lives in the default userData dir and MUST NOT be touched by
 // tests. A screenshot / scrape smoke run, or an explicit override, is sent to a
 // throwaway directory so a developer can never clobber real applications.
 const dataOverride =
-  process.env['JOBDASH_DATA_DIR'] ||
-  (process.env['SMOKE'] || process.env['SMOKE_SCRAPE']
-    ? join(tmpdir(), 'job-dashboard-smoke')
-    : '')
+  (isDev && process.env['JOBDASH_DATA_DIR']) ||
+  (SMOKE || SMOKE_SCRAPE ? join(tmpdir(), 'job-dashboard-smoke') : '')
 if (dataOverride) {
   app.setPath('userData', dataOverride)
 }
@@ -46,8 +55,6 @@ function buildMenu(): void {
   )
 }
 
-const isDev = !app.isPackaged
-
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1360,
@@ -62,11 +69,26 @@ function createWindow(): void {
     icon: isDev ? join(process.cwd(), 'build/icon.png') : undefined,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: true,
     },
+  })
+
+  // Lock the main window to its own origin. Internal routing is client-side, so
+  // any real navigation is either a bug or an attempt to load a remote page into
+  // the window that holds the `api` bridge — send links to the OS browser.
+  const ownOrigin = (u: string): boolean =>
+    u.startsWith('file://') || (!!process.env['ELECTRON_RENDERER_URL'] && isDev &&
+      u.startsWith(process.env['ELECTRON_RENDERER_URL']))
+  win.webContents.on('will-navigate', (e, url) => {
+    if (ownOrigin(url)) return
+    e.preventDefault()
+    if (url.startsWith('http://') || url.startsWith('https://')) void shell.openExternal(url)
+  })
+  win.webContents.on('will-frame-navigate', (e) => {
+    if (!e.isMainFrame && !ownOrigin(e.url)) e.preventDefault()
   })
 
   win.once('ready-to-show', () => win.show())
@@ -75,27 +97,26 @@ function createWindow(): void {
   win.on('maximize', sendMax)
   win.on('unmaximize', sendMax)
 
-  if (process.env['SMOKE']) {
+  if (SMOKE) {
     win.webContents.on('console-message', (_e, level, message) =>
       console.log(`  [renderer:${level}] ${message}`),
     )
-    const smokeHash = process.env['SMOKE_HASH']
     setTimeout(async () => {
       try {
-        if (smokeHash) {
+        if (SMOKE_HASH) {
           const href = await win.webContents.executeJavaScript(
-            `location.hash = ${JSON.stringify('#' + smokeHash)}; new Promise(r => setTimeout(() => r(location.href), 100))`,
+            `location.hash = ${JSON.stringify('#' + SMOKE_HASH)}; new Promise(r => setTimeout(() => r(location.href), 100))`,
           )
           console.log('SMOKE nav ->', href)
           await new Promise((r) => setTimeout(r, 2000))
         }
-        if (process.env['SMOKE_EVAL']) {
-          await win.webContents.executeJavaScript(process.env['SMOKE_EVAL'] as string)
+        if (SMOKE_EVAL) {
+          await win.webContents.executeJavaScript(SMOKE_EVAL)
           await new Promise((r) => setTimeout(r, 700))
         }
         const img = await win.webContents.capturePage()
         const { writeFileSync } = await import('node:fs')
-        writeFileSync(process.env['SMOKE'] as string, img.toPNG())
+        writeFileSync(SMOKE, img.toPNG())
         console.log('SMOKE screenshot written')
       } catch (e) {
         console.error('SMOKE failed', e)
@@ -124,7 +145,7 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  const hash = process.env['SMOKE_HASH'] ?? ''
+  const hash = SMOKE_HASH ?? ''
   const devUrl = process.env['ELECTRON_RENDERER_URL']
   if (isDev && devUrl) {
     void win.loadURL(devUrl + (hash ? `#${hash}` : ''))
@@ -155,9 +176,9 @@ app.whenReady().then(async () => {
   registerWindowIpc()
   buildMenu()
 
-  if (process.env['SMOKE_SCRAPE']) {
+  if (SMOKE_SCRAPE) {
     try {
-      const r = await scrapeUrl(process.env['SMOKE_SCRAPE'] as string)
+      const r = await scrapeUrl(SMOKE_SCRAPE)
       console.log(
         JSON.stringify(
           { ...r, jdText: r.jdText.slice(0, 300) + ` …(${r.jdText.length} chars)` },
