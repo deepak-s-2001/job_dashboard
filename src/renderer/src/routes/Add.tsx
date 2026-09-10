@@ -9,6 +9,7 @@ import { Input, Textarea, Select, Fieldset } from '@/components/ui/Field'
 import { Spinner, Divider } from '@/components/ui/misc'
 import { TagInput } from '@/components/TagInput'
 import { StatusControl } from '@/components/StatusControl'
+import { LocationInput } from '@/components/LocationInput'
 import { todayIso, titleCase } from '@/lib/format'
 import {
   DEFAULT_STATUS,
@@ -17,6 +18,7 @@ import {
   type ApplicationStatus,
   type EmploymentType,
   type ExtractionResult,
+  type SalaryPeriod,
   type ScrapedJob,
   type SourceSite,
   type WorkplaceType,
@@ -31,7 +33,10 @@ interface FormState {
   workplaceType: WorkplaceType | ''
   employmentType: EmploymentType | ''
   datePosted: string
-  salaryRange: string
+  salaryMin: string
+  salaryMax: string
+  salaryPeriod: SalaryPeriod | ''
+  salaryRaw: string
   jdText: string
   dateApplied: string
   status: ApplicationStatus
@@ -49,7 +54,10 @@ function fromScrape(s: ScrapedJob): FormState {
     workplaceType: s.workplaceType ?? '',
     employmentType: s.employmentType ?? '',
     datePosted: s.datePosted ?? '',
-    salaryRange: s.salaryRange ?? '',
+    salaryMin: s.salaryMin != null ? String(s.salaryMin) : '',
+    salaryMax: s.salaryMax != null ? String(s.salaryMax) : '',
+    salaryPeriod: s.salaryPeriod ?? (s.salaryMin != null ? 'year' : ''),
+    salaryRaw: s.salaryRange ?? '',
     jdText: s.jdText,
     dateApplied: todayIso(),
     status: DEFAULT_STATUS,
@@ -142,7 +150,10 @@ export function AddApplication() {
         workplaceType: form.workplaceType || null,
         employmentType: form.employmentType || null,
         datePosted: form.datePosted || null,
-        salaryRange: form.salaryRange.trim() || null,
+        salaryRange: form.salaryRaw.trim() || null,
+        salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
+        salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
+        salaryPeriod: form.salaryPeriod || null,
         jdText: form.jdText.trim(),
         dateApplied: form.dateApplied,
         status: form.status,
@@ -222,10 +233,36 @@ export function AddApplication() {
                 <Input value={form.roleTitle} onChange={(e) => set('roleTitle', e.target.value)} />
               </Fieldset>
               <Fieldset label="Location">
-                <Input value={form.location} onChange={(e) => set('location', e.target.value)} />
+                <LocationInput value={form.location} onChange={(v) => set('location', v)} />
               </Fieldset>
-              <Fieldset label="Salary range">
-                <Input value={form.salaryRange} onChange={(e) => set('salaryRange', e.target.value)} />
+              <Fieldset label="Salary range" hint={form.salaryPeriod === 'hour' ? 'per hour' : 'per year'}>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="min"
+                    value={form.salaryMin}
+                    onChange={(e) => set('salaryMin', e.target.value)}
+                  />
+                  <span className="font-bold text-muted">–</span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="max"
+                    value={form.salaryMax}
+                    onChange={(e) => set('salaryMax', e.target.value)}
+                  />
+                  <Select
+                    ariaLabel="Pay period"
+                    value={form.salaryPeriod}
+                    onChange={(v) => set('salaryPeriod', v as SalaryPeriod | '')}
+                    options={[
+                      { value: '', label: '—' },
+                      { value: 'year', label: '/ yr' },
+                      { value: 'hour', label: '/ hr' },
+                    ]}
+                  />
+                </div>
               </Fieldset>
               <Fieldset label="Employment type">
                 <Select
@@ -363,6 +400,9 @@ const BLANK_SCRAPE: ScrapedJob = {
   employmentType: null,
   datePosted: null,
   salaryRange: null,
+  salaryMin: null,
+  salaryMax: null,
+  salaryPeriod: null,
   jdText: '',
   needsManualPaste: true,
   note: '',

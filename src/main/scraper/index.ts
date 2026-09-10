@@ -1,4 +1,5 @@
 import type { ScrapedJob, SourceSite } from '@shared/types'
+import { parseSalary } from '@shared/salary'
 import { findAdapter } from './adapters'
 import { renderPage } from './render'
 import { parseJobPostingLd } from './jsonld'
@@ -14,6 +15,15 @@ const EMPTY: Omit<ScrapedJob, 'url' | 'jdText' | 'needsManualPaste' | 'note'> = 
   employmentType: null,
   datePosted: null,
   salaryRange: null,
+  salaryMin: null,
+  salaryMax: null,
+  salaryPeriod: null,
+}
+
+/** fill the numeric salary fields from whatever raw string we scraped */
+function withSalary(job: ScrapedJob): ScrapedJob {
+  const p = parseSalary(job.salaryRange)
+  return { ...job, salaryMin: p.min, salaryMax: p.max, salaryPeriod: p.period }
 }
 
 function normalizeUrl(input: string): URL {
@@ -39,6 +49,10 @@ function cleanTitle(raw: string | null): string | null {
 }
 
 export async function scrapeUrl(rawUrl: string): Promise<ScrapedJob> {
+  return withSalary(await scrapeUrlImpl(rawUrl))
+}
+
+async function scrapeUrlImpl(rawUrl: string): Promise<ScrapedJob> {
   let url: URL
   try {
     url = normalizeUrl(rawUrl)
@@ -126,6 +140,10 @@ export async function scrapeUrl(rawUrl: string): Promise<ScrapedJob> {
 
 /** Manual-paste path: user supplies the JD text (and optionally company/role). */
 export function scrapeFromText(rawUrl: string, pastedText: string): ScrapedJob {
+  return withSalary(scrapeFromTextImpl(rawUrl, pastedText))
+}
+
+function scrapeFromTextImpl(rawUrl: string, pastedText: string): ScrapedJob {
   let site: SourceSite = 'generic'
   let urlOut = rawUrl.trim()
   try {

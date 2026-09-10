@@ -62,6 +62,8 @@ export type Accent = (typeof ACCENTS)[number]
 
 export type ExtractionModel = 'claude-haiku-4-5' | 'claude-sonnet-5'
 
+export type SalaryPeriod = 'year' | 'hour'
+
 // ---------- Network / referrals ----------
 
 export type ContactRelationship =
@@ -192,7 +194,11 @@ export interface Application {
   workplaceType: WorkplaceType | null
   employmentType: EmploymentType | null
   datePosted: string | null
+  /** raw scraped/typed pay text — kept as a fallback for anything unparseable */
   salaryRange: string | null
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryPeriod: SalaryPeriod | null
   jdText: string
 
   // user-set
@@ -291,6 +297,9 @@ export interface ScrapedJob {
   employmentType: EmploymentType | null
   datePosted: string | null
   salaryRange: string | null
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryPeriod: SalaryPeriod | null
   jdText: string
   /** true when the scrape produced too little to trust — UI shows a manual-paste box */
   needsManualPaste: boolean
@@ -323,6 +332,9 @@ export interface NewApplicationInput {
   employmentType: EmploymentType | null
   datePosted: string | null
   salaryRange: string | null
+  salaryMin?: number | null
+  salaryMax?: number | null
+  salaryPeriod?: SalaryPeriod | null
   jdText: string
   dateApplied: string
   status: ApplicationStatus

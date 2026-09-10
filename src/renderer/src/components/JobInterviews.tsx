@@ -94,8 +94,11 @@ export function JobInterviews({
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <input
-                  value={iv.round}
-                  onChange={(e) => patchRound(iv.id, { round: e.target.value })}
+                  defaultValue={iv.round}
+                  key={iv.id + ':round:' + iv.round}
+                  onBlur={(e) => {
+                    if (e.target.value !== iv.round) patchRound(iv.id, { round: e.target.value })
+                  }}
                   placeholder="Round (e.g. Hiring manager)"
                   list="iv-rounds"
                   className="flex-1 border-b-2 border-ink bg-transparent py-0.5 text-[15px] font-bold outline-none"
@@ -143,8 +146,11 @@ export function JobInterviews({
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
                   With whom
                   <input
-                    value={iv.withWhom}
-                    onChange={(e) => patchRound(iv.id, { withWhom: e.target.value })}
+                    defaultValue={iv.withWhom}
+                    key={iv.id + ':who:' + iv.withWhom}
+                    onBlur={(e) => {
+                      if (e.target.value !== iv.withWhom) patchRound(iv.id, { withWhom: e.target.value })
+                    }}
                     placeholder="Priya S (eng manager)"
                     className="mt-1 block w-full border-2 border-ink bg-surface px-2 py-1 text-[13px] font-normal outline-none"
                   />
@@ -164,10 +170,13 @@ export function JobInterviews({
               </div>
 
               <Textarea
-                value={iv.prepNotes}
-                onChange={(e) => patchRound(iv.id, { prepNotes: e.target.value })}
+                defaultValue={iv.prepNotes}
+                key={iv.id + ':' + iv.prepNotes}
+                onBlur={(e) => {
+                  if (e.target.value !== iv.prepNotes) patchRound(iv.id, { prepNotes: e.target.value })
+                }}
                 rows={2}
-                placeholder="Prep notes — topics, people to research, questions to ask…"
+                placeholder="Prep notes — topics, people to research, questions to ask… (saves when you click away)"
                 className="mt-2 text-[13px]"
               />
               <button

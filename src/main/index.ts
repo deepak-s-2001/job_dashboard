@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, MenuItem, shell } from 'electron'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { initStore, shutdownStore } from './store'
@@ -89,6 +89,41 @@ function createWindow(): void {
   })
   win.webContents.on('will-frame-navigate', (e) => {
     if (!e.isMainFrame && !ownOrigin(e.url)) e.preventDefault()
+  })
+
+  // spell-check suggestions + basic edit actions on right-click
+  try {
+    win.webContents.session.setSpellCheckerLanguages(['en-US'])
+    win.webContents.session.setSpellCheckerEnabled(true)
+  } catch {
+    /* platform without a spellchecker */
+  }
+  win.webContents.on('context-menu', (_e, params) => {
+    const menu = new Menu()
+    for (const s of params.dictionarySuggestions) {
+      menu.append(
+        new MenuItem({ label: s, click: () => win.webContents.replaceMisspelling(s) }),
+      )
+    }
+    if (params.misspelledWord) {
+      if (params.dictionarySuggestions.length) menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(
+        new MenuItem({
+          label: `Add “${params.misspelledWord}” to dictionary`,
+          click: () =>
+            win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+        }),
+      )
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+    if (params.isEditable || params.selectionText) {
+      if (params.isEditable) menu.append(new MenuItem({ role: 'cut', enabled: !!params.selectionText }))
+      menu.append(new MenuItem({ role: 'copy', enabled: !!params.selectionText }))
+      if (params.isEditable) menu.append(new MenuItem({ role: 'paste' }))
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({ role: 'selectAll' }))
+    }
+    if (menu.items.length) menu.popup()
   })
 
   win.once('ready-to-show', () => win.show())

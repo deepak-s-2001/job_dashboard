@@ -11,7 +11,10 @@ export function Funnel({ stages }: { stages: FunnelStage[] }) {
   const top = Math.max(1, stages[0]?.n ?? 1)
   return (
     <div className="border-3 border-ink bg-surface rounded p-4 shadow-hard-sm">
-      <h3 className="mb-3 font-display text-base font-bold uppercase tracking-wide">Funnel</h3>
+      <h3 className="font-display text-base font-bold uppercase tracking-wide">Funnel</h3>
+      <p className="mb-3 text-[12px] text-muted">
+        how many of your applications ever reached each stage
+      </p>
       <div className="space-y-2">
         {stages.map((s) => (
           <div key={s.key}>

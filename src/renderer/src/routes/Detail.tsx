@@ -5,6 +5,7 @@ import {
   EMPLOYMENT_TYPES,
   WORKPLACE_TYPES,
   type EmploymentType,
+  type SalaryPeriod,
   type WorkplaceType,
 } from '@shared/types'
 import { api, call } from '@/lib/api'
@@ -14,7 +15,7 @@ import { useFilteredApps, sortApps } from '@/lib/filter'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/Confirm'
 import { Button } from '@/components/ui/Button'
-import { Input, Select, Textarea, Fieldset } from '@/components/ui/Field'
+import { Input, Select, Fieldset } from '@/components/ui/Field'
 import { Spinner, EmptyState, Divider } from '@/components/ui/misc'
 import { Tabs, TabList, Tab, TabPanel } from '@/components/ui/Tabs'
 import { ResumePane } from '@/components/ResumePane'
@@ -22,6 +23,8 @@ import { JobPrompt } from '@/components/JobPrompt'
 import { JobNetwork } from '@/components/JobNetwork'
 import { JobTodos } from '@/components/JobTodos'
 import { JobInterviews } from '@/components/JobInterviews'
+import { NotesEditor } from '@/components/NotesEditor'
+import { LocationInput } from '@/components/LocationInput'
 import { contactsForJob } from '@/lib/company'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { WorkdaySkillsBox } from '@/components/WorkdaySkillsBox'
@@ -421,16 +424,11 @@ export function Detail() {
               </TabPanel>
 
               <TabPanel value="notes">
-                <Textarea
-                  defaultValue={app.notes}
-                  rows={12}
-                  className="text-[15px]"
+                <NotesEditor
+                  value={app.notes}
+                  onSave={(v) => patch({ notes: v })}
                   placeholder="Referral, recruiter, salary discussion, interview notes…"
-                  onBlur={(e) => {
-                    if (e.target.value !== app.notes) void patch({ notes: e.target.value })
-                  }}
                 />
-                <p className="mt-1.5 text-[12px] text-muted">Saved when you click away.</p>
               </TabPanel>
 
               <TabPanel value="details">
@@ -502,10 +500,43 @@ function DetailsForm({
         <Input defaultValue={app.roleTitle} onBlur={(e) => commit(e.target.value, app.roleTitle, (v) => onPatch({ roleTitle: v }))} />
       </Field>
       <Field label="Location">
-        <Input defaultValue={app.location ?? ''} onBlur={(e) => commit(e.target.value, app.location ?? '', (v) => onPatch({ location: v || null }))} />
+        <LocationInput
+          value={app.location ?? ''}
+          onBlur={(v) => commit(v, app.location ?? '', (x) => onPatch({ location: x || null }))}
+        />
       </Field>
       <Field label="Salary range">
-        <Input defaultValue={app.salaryRange ?? ''} onBlur={(e) => commit(e.target.value, app.salaryRange ?? '', (v) => onPatch({ salaryRange: v || null }))} />
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            placeholder="min"
+            defaultValue={app.salaryMin ?? ''}
+            key={`min${app.id}${app.salaryMin}`}
+            onBlur={(e) =>
+              onPatch({ salaryMin: e.target.value ? Number(e.target.value) : null })
+            }
+          />
+          <span className="font-bold text-muted">–</span>
+          <Input
+            type="number"
+            placeholder="max"
+            defaultValue={app.salaryMax ?? ''}
+            key={`max${app.id}${app.salaryMax}`}
+            onBlur={(e) =>
+              onPatch({ salaryMax: e.target.value ? Number(e.target.value) : null })
+            }
+          />
+          <Select
+            ariaLabel="Pay period"
+            value={app.salaryPeriod ?? ''}
+            onChange={(v) => onPatch({ salaryPeriod: (v || null) as SalaryPeriod | null })}
+            options={[
+              { value: '', label: '—' },
+              { value: 'year', label: '/ yr' },
+              { value: 'hour', label: '/ hr' },
+            ]}
+          />
+        </div>
       </Field>
       <Field label="Employment type">
         <Select

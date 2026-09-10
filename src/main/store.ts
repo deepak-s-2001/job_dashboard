@@ -23,6 +23,7 @@ import type {
   UserProfile,
 } from '@shared/types'
 import { ACCENTS, EMPTY_PROFILE } from '@shared/types'
+import { parseSalary } from '@shared/salary'
 import { JsonDb, genId } from './jsondb'
 
 const DB_VERSION = 1
@@ -130,6 +131,15 @@ function migrateApplication(a: Application): void {
   a.interviews ??= []
   a.offerDeadline ??= null
   a.archivedAt ??= null
+  if (a.salaryMin === undefined && a.salaryMax === undefined) {
+    const p = parseSalary(a.salaryRange)
+    a.salaryMin = p.min
+    a.salaryMax = p.max
+    a.salaryPeriod = p.period
+  }
+  a.salaryMin ??= null
+  a.salaryMax ??= null
+  a.salaryPeriod ??= null
   if (!a.statusHistory || a.statusHistory.length === 0) {
     a.statusHistory = [
       { status: a.status, at: a.dateApplied ? `${a.dateApplied}T12:00:00.000Z` : a.createdAt },
@@ -268,6 +278,7 @@ function seedStatusAt(dateApplied: string, ts: string): string {
 function buildApplication(input: NewApplicationInput, ts: string): Application {
   const id = genId(12)
   const ex = input.extraction
+  const parsed = parseSalary(input.salaryRange)
   return {
     id,
     url: input.url,
@@ -279,6 +290,9 @@ function buildApplication(input: NewApplicationInput, ts: string): Application {
     employmentType: input.employmentType,
     datePosted: input.datePosted,
     salaryRange: input.salaryRange,
+    salaryMin: input.salaryMin ?? parsed.min,
+    salaryMax: input.salaryMax ?? parsed.max,
+    salaryPeriod: input.salaryPeriod ?? parsed.period,
     jdText: input.jdText,
     dateApplied: input.dateApplied,
     status: input.status,
@@ -343,6 +357,9 @@ const MUTABLE_FIELDS: (keyof Application)[] = [
   'employmentType',
   'datePosted',
   'salaryRange',
+  'salaryMin',
+  'salaryMax',
+  'salaryPeriod',
   'jdText',
   'dateApplied',
   'status',

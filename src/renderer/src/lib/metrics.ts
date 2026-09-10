@@ -98,9 +98,9 @@ export function funnel(apps: Application[]): FunnelStage[] {
   const applied = apps.filter(isApplied)
   const counts = [
     { key: 'applied', label: 'Applied', n: applied.length },
-    { key: 'responded', label: 'Responded', n: applied.filter((a) => respondedAt(a)).length },
-    { key: 'interviewed', label: 'Interviewed', n: applied.filter((a) => everReached(a, INTERVIEWED)).length },
-    { key: 'offered', label: 'Offered', n: applied.filter((a) => everReached(a, ['offer'])).length },
+    { key: 'responded', label: 'Got a reply', n: applied.filter((a) => respondedAt(a)).length },
+    { key: 'interviewed', label: 'Reached an interview', n: applied.filter((a) => everReached(a, INTERVIEWED)).length },
+    { key: 'offered', label: 'Got an offer', n: applied.filter((a) => everReached(a, ['offer'])).length },
   ]
   return counts.map((c, i) => ({
     ...c,
