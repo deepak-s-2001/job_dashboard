@@ -6,6 +6,7 @@ import { SOURCE_LABEL, STATUS_HEX, statusLabel, titleCase } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { Input } from './ui/Field'
 import { Select } from './ui/Select'
+import { DateField } from './ui/DatePicker'
 
 type ArrayKey = 'status' | 'employmentType' | 'workplaceType' | 'sourceSite' | 'tags'
 
@@ -179,17 +180,19 @@ export function FilterRail({
 
         <Group title="Applied between">
           <div className="space-y-1.5">
-            <Input
-              type="date"
-              value={filters.appliedFrom ?? ''}
-              onChange={(e) => onChange({ ...filters, appliedFrom: e.target.value || null })}
-              className="h-9 px-2 text-[14px]"
+            <DateField
+              size="sm"
+              ariaLabel="Applied from"
+              placeholder="From"
+              value={filters.appliedFrom ?? null}
+              onChange={(v) => onChange({ ...filters, appliedFrom: v })}
             />
-            <Input
-              type="date"
-              value={filters.appliedTo ?? ''}
-              onChange={(e) => onChange({ ...filters, appliedTo: e.target.value || null })}
-              className="h-9 px-2 text-[14px]"
+            <DateField
+              size="sm"
+              ariaLabel="Applied to"
+              placeholder="To"
+              value={filters.appliedTo ?? null}
+              onChange={(v) => onChange({ ...filters, appliedTo: v })}
             />
           </div>
         </Group>

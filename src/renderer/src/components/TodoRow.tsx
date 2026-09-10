@@ -4,6 +4,7 @@ import type { Application, Todo } from '@shared/types'
 import { useAppData } from '@/lib/store'
 import { useToast } from './ui/Toast'
 import { cn } from '@/lib/cn'
+import { DateField } from './ui/DatePicker'
 import { initials, todayIso } from '@/lib/format'
 import { dueLabel, isOverdue, isDueToday, plusDaysIso } from '@/lib/todo'
 
@@ -111,16 +112,17 @@ export function TodoRow({
               {q.label}
             </button>
           ))}
-          <input
-            type="date"
-            defaultValue={todo.dueDate ?? ''}
-            onChange={(e) => {
-              void updateTodo(todo.id, { dueDate: e.target.value || null })
-              setEditingDue(false)
-            }}
-            onBlur={() => setEditingDue(false)}
-            className="border-2 border-ink bg-ground px-1 py-0.5 text-[11px] outline-none"
-          />
+          <div className="w-[150px]">
+            <DateField
+              size="sm"
+              ariaLabel="Due date"
+              value={todo.dueDate ?? null}
+              onChange={(v) => {
+                void updateTodo(todo.id, { dueDate: v })
+                setEditingDue(false)
+              }}
+            />
+          </div>
           {todo.dueDate && (
             <button
               type="button"

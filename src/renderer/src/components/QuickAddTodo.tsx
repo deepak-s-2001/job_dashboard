@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { Application, NewTodoInput } from '@shared/types'
 import { Select } from './ui/Select'
+import { DateField } from './ui/DatePicker'
 import { cn } from '@/lib/cn'
 import { todayIso } from '@/lib/format'
 import { plusDaysIso } from '@/lib/todo'
@@ -62,15 +63,15 @@ export function QuickAddTodo({ apps, onAdd, defaultApplicationId = null, showJob
             </button>
           )
         })}
-        <label className="inline-flex items-center gap-1 border-2 border-ink bg-ground px-1.5 py-0.5 text-[12px] font-bold">
-          📅
-          <input
-            type="date"
-            value={due && !QUICK.some((q) => q.value() === due) ? due : ''}
-            onChange={(e) => setDue(e.target.value || null)}
-            className="bg-transparent text-[12px] outline-none"
+        <div className="w-[150px]">
+          <DateField
+            size="sm"
+            ariaLabel="Due date"
+            placeholder="📅 Pick a date"
+            value={due && !QUICK.some((q) => q.value() === due) ? due : null}
+            onChange={(v) => setDue(v)}
           />
-        </label>
+        </div>
         {due && (
           <button
             type="button"
