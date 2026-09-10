@@ -42,7 +42,7 @@ export function Import() {
     <div className="flex h-full flex-col">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b-3 border-ink bg-ground/95 px-6 py-4 backdrop-blur">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/applications')}
           className="nb-focus border-3 border-ink bg-surface px-2 py-1 text-sm font-bold shadow-hard-sm hover:-translate-y-[1px]"
         >
           ←
@@ -71,14 +71,14 @@ export function Import() {
             <LinksMode
               existingUrls={existingUrls}
               createAppsBulk={createAppsBulk}
-              onDone={() => navigate('/')}
+              onDone={() => navigate('/applications')}
               toastErr={(m) => toast.push('error', m)}
               toastOk={(m) => toast.push('success', m)}
             />
           ) : (
             <TableMode
               createAppsBulk={createAppsBulk}
-              onDone={() => navigate('/')}
+              onDone={() => navigate('/applications')}
               toastErr={(m) => toast.push('error', m)}
               toastOk={(m) => toast.push('success', m)}
             />

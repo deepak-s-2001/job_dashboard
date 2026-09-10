@@ -4,7 +4,8 @@ import { AppDataProvider } from './lib/store'
 import { ViewProvider } from './lib/view'
 import { AppShell } from './components/AppShell'
 import { CommandPalette } from './components/CommandPalette'
-import { Dashboard } from './routes/Dashboard'
+import { Overview } from './routes/Overview'
+import { Applications } from './routes/Applications'
 import { AddApplication } from './routes/Add'
 import { Import } from './routes/Import'
 import { Detail } from './routes/Detail'
@@ -29,7 +30,8 @@ export function App() {
             className="h-full"
           >
             <Routes location={location}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Overview />} />
+              <Route path="/applications" element={<Applications />} />
               <Route path="/add" element={<AddApplication />} />
               <Route path="/import" element={<Import />} />
               <Route path="/app/:id" element={<Detail />} />

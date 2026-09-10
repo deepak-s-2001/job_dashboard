@@ -124,6 +124,16 @@ export function snapshot(): void {
   }
 }
 
+/** Fill fields added in later versions on an application loaded from disk. */
+function migrateApplication(a: Application): void {
+  a.contactIds ??= []
+  if (!a.statusHistory || a.statusHistory.length === 0) {
+    a.statusHistory = [
+      { status: a.status, at: a.dateApplied ? `${a.dateApplied}T12:00:00.000Z` : a.createdAt },
+    ]
+  }
+}
+
 export async function initStore(): Promise<void> {
   snapshot()
   db = JsonDb.open<DBShape>(dbPath(), defaultData)
@@ -136,7 +146,7 @@ export async function initStore(): Promise<void> {
   db.data.usage ??= { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
   db.data.settings ??= { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } }
   db.data.settings.profile ??= { ...EMPTY_PROFILE }
-  for (const a of db.data.applications) a.contactIds ??= []
+  db.data.applications.forEach(migrateApplication)
   await db.flushNow()
 }
 
@@ -203,7 +213,7 @@ export async function restoreBackup(name: string): Promise<number> {
   db.data.usage = restored.usage ?? db.data.usage
   db.data.settings = restored.settings ?? db.data.settings
   db.data.settings.profile ??= { ...EMPTY_PROFILE }
-  for (const a of db.data.applications) a.contactIds ??= []
+  db.data.applications.forEach(migrateApplication)
   await db.flushNow()
   return db.data.applications.length
 }
@@ -248,6 +258,10 @@ export function findApplicationByUrl(url: string): Application | undefined {
   return db.data.applications.find((a) => a.url && normalizeUrl(a.url) === key)
 }
 
+function seedStatusAt(dateApplied: string, ts: string): string {
+  return dateApplied ? `${dateApplied}T12:00:00.000Z` : ts
+}
+
 function buildApplication(input: NewApplicationInput, ts: string): Application {
   const id = genId(12)
   const ex = input.extraction
@@ -265,6 +279,7 @@ function buildApplication(input: NewApplicationInput, ts: string): Application {
     jdText: input.jdText,
     dateApplied: input.dateApplied,
     status: input.status,
+    statusHistory: [{ status: input.status, at: seedStatusAt(input.dateApplied, ts) }],
     accent: pickAccent(id + input.company),
     tags: dedupeTags(input.tags),
     notes: input.notes ?? '',
@@ -342,6 +357,9 @@ export async function updateApplication(
 ): Promise<Application | undefined> {
   const app_ = db.data.applications.find((a) => a.id === id)
   if (!app_) return undefined
+  if (patch.status && patch.status !== app_.status) {
+    ;(app_.statusHistory ??= []).push({ status: patch.status, at: nowIso() })
+  }
   for (const key of MUTABLE_FIELDS) {
     if (key in patch && patch[key] !== undefined) {
       // @ts-expect-error narrowed by the whitelist above

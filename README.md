@@ -1,15 +1,15 @@
 # Job Dashboard
 
-A local, offline **Windows desktop app** for documenting every job you apply to — the posting
-link, the description, the skills it asks for, notes for tailoring your resume, and the resume
-PDF(s) you actually sent — all on one colourful board with search and filters.
+A local, offline **Windows desktop app** for running a job search — every application, the
+posting and its skills, the resume you sent, the people who could refer you, the follow-ups,
+and a dashboard of how it's all going.
 
 Paste a job link and the app reads the company, role, description and date for you. Press
 **Extract** and one small Claude call pulls out the skills, a summary, "what this company
-values", and concrete tailoring tips. Attach the resume you sent. Keep a list of people who
-could refer you, and the app drafts the ask. That's the loop.
+values", and concrete tailoring tips. Attach the resume you sent. Track it through the pipeline
+and the **Overview** page turns it into a funnel, response rates, and a weekly trend.
 
-![Dashboard](docs/dashboard.png)
+![Overview](docs/overview.png)
 
 Everything stays on your machine. There is **no account, no server, no sync**. The only network
 calls are to the job site you paste (to read the posting) and — only when you press **Extract**
@@ -141,13 +141,29 @@ Drag the PDF onto the job (or pick a file). It's **copied** into the app's data 
 original is untouched and can be moved or deleted. You can keep multiple versions per job and
 mark one primary. The viewer renders the real PDF exactly (via pdf.js), page by page.
 
-### 4. Everything after that is browsing
+### 4. Track it, and read the dashboard
+
+Move each job through **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted /
+Withdrawn**. Every transition is timestamped, so the **Overview** (home) page can show:
+
+- **KPI row** — total, active pipeline, response rate, interview rate, offers, applied this week
+- **Applications over time** — a weekly line of *applied* vs *responded* (toggle cumulative)
+- **Funnel** — Applied → Responded → Interviewed → Offered, with the drop-off at each step
+- **Response rate by source** and **by tag** — which channels actually reply
+- **To-dos** due now, and **Needs attention** — jobs gone quiet 14+ days, missing a resume, or
+  interviewing with no prep to-do
+
+A **response** = any reply, *including a rejection* — it means a human saw your application.
+Only *Ghosted* counts as no response. It's all visual — no pop-ups, no notifications.
+
+### 5. Everything after that is browsing
 
 ![Detail view](docs/detail.png)
 
-Each job has a detail view with the resume beside tabs for **Description · Skills · Insights ·
-Tips · Network · To-dos · Prompt · Notes · Details**. Page between jobs with the arrows (or
-`[` / `]`), and the paging respects whatever search or filter you had on the board.
+The **Applications** tab is the card board — search, the filter rail, sort. Each job's detail
+view has the resume beside tabs for **Description · Skills · Insights · Tips · Network · To-dos
+· Prompt · Notes · Details**. Page between jobs with the arrows (or `[` / `]`), and the paging
+respects whatever search or filter you had on the board.
 
 ### The "Prompt" tab
 
@@ -233,8 +249,10 @@ OS notifications, ever.
 
 | Feature | How |
 |---|---|
+| See how the search is going | **Overview** (home) — KPIs, funnel, weekly trend, response rates, needs-attention |
 | Add a job | **Add application** in the sidebar, or `Ctrl`+`K` → "Add" |
 | Import in bulk | Sidebar **Import** → paste many job links (each is scraped), or paste a CSV / Huntr / Teal export and map the columns |
+| Browse the board | **Applications** tab — the card grid |
 | Search | The search box in the **Find** panel — fuzzy match across company, role, skills, description, notes |
 | Filter | **Find** panel — status, employment type, workplace, applied-date range, tag, source board, "has a resume", "AI-extracted" |
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |
@@ -439,7 +457,7 @@ src/
   preload/
     index.ts            contextBridge — the window.api definition
   renderer/             React SPA
-    src/routes/         Dashboard, Detail, Add, Settings
+    src/routes/         Overview, Applications, Detail, Add, Import, Todos, Network, Settings
     src/components/      AppCard, FilterRail, PdfViewer, JobPrompt, ui/*
     src/lib/            api client, fuse setup, filters, formatting, prompt builder
   shared/

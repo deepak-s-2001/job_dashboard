@@ -26,7 +26,7 @@ import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { WorkdaySkillsBox } from '@/components/WorkdaySkillsBox'
 import { StatusControl } from '@/components/StatusControl'
 import { TagInput } from '@/components/TagInput'
-import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, titleCase, todayIso } from '@/lib/format'
+import { ACCENT_HEX, SOURCE_LABEL, STATUS_HEX, fmtDate, initials, statusLabel, titleCase, todayIso } from '@/lib/format'
 
 export function Detail() {
   const { id } = useParams<{ id: string }>()
@@ -147,14 +147,14 @@ export function Detail() {
     if (!yes) return
     await call(api.apps.remove(app.id))
     await refresh()
-    navigate('/')
+    navigate('/applications')
   }
 
   if (notFound) {
     return (
       <div className="p-8">
         <EmptyState emoji="🫥" title="That application is gone"
-          action={<Button onClick={() => navigate('/')}>Back to dashboard</Button>} />
+          action={<Button onClick={() => navigate('/applications')}>Back to applications</Button>} />
       </div>
     )
   }
@@ -178,7 +178,7 @@ export function Detail() {
       <header className="flex-none border-b-3 border-ink bg-ground px-5 py-3">
         <div className="mb-2.5 flex items-center gap-2">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/applications')}
             className="nb-focus flex items-center gap-1.5 border-3 border-ink bg-surface px-2.5 py-1 text-[13px] font-bold shadow-hard-sm hover:-translate-y-[1px]"
           >
             ← All applications
@@ -527,6 +527,26 @@ function DetailsForm({
           <Input defaultValue={app.url} onBlur={(e) => commit(e.target.value, app.url, (v) => onPatch({ url: v }))} />
         </Field>
       </div>
+      {app.statusHistory && app.statusHistory.length > 1 && (
+        <div className="sm:col-span-2">
+          <Fieldset label="Status history">
+            <ol className="flex flex-wrap items-center gap-1.5 text-[12px]">
+              {app.statusHistory.map((h, i) => (
+                <li key={i} className="flex items-center gap-1.5">
+                  {i > 0 && <span className="text-muted">→</span>}
+                  <span
+                    className="border-2 border-ink px-1.5 py-0.5 font-bold uppercase"
+                    style={{ background: STATUS_HEX[h.status] }}
+                  >
+                    {statusLabel(h.status)}
+                  </span>
+                  <span className="text-muted">{fmtDate(h.at)}</span>
+                </li>
+              ))}
+            </ol>
+          </Fieldset>
+        </div>
+      )}
     </div>
   )
 }

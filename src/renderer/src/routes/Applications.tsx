@@ -6,7 +6,6 @@ import { useView } from '@/lib/view'
 import { EMPTY_FILTERS, useFilteredApps } from '@/lib/filter'
 import { normalizeCompany } from '@/lib/company'
 import { AppCard } from '@/components/AppCard'
-import { StatsStrip } from '@/components/StatsStrip'
 import { FilterRail } from '@/components/FilterRail'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Spinner } from '@/components/ui/misc'
@@ -19,8 +18,8 @@ function readCollapsed(): boolean {
   }
 }
 
-export function Dashboard() {
-  const { apps, contacts, todos, loading, error } = useAppData()
+export function Applications() {
+  const { apps, contacts, loading, error } = useAppData()
   const { query, setQuery, filters, setFilters, sort, setSort } = useView()
   const [railCollapsed, setRailCollapsed] = useState(readCollapsed)
 
@@ -74,12 +73,6 @@ export function Dashboard() {
         )}
 
         <div className="min-w-0 flex-1 overflow-y-auto nb-scroll p-6">
-          {apps.length > 0 && (
-            <div className="mb-5">
-              <StatsStrip apps={apps} todos={todos} />
-            </div>
-          )}
-
           {loading ? (
             <div className="flex items-center gap-2 py-20 text-muted">
               <Spinner /> Loading your applications…
@@ -93,11 +86,16 @@ export function Dashboard() {
               emoji="🗂️"
               title="No applications yet"
               action={
-                <Link to="/add">
-                  <Button variant="primary" size="lg">
-                    Add your first one
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link to="/add">
+                    <Button variant="primary" size="lg">
+                      Add your first one
+                    </Button>
+                  </Link>
+                  <Link to="/import">
+                    <Button size="lg">Import a list</Button>
+                  </Link>
+                </div>
               }
             >
               Paste a job link and the app pulls in the company, description and date. Then you

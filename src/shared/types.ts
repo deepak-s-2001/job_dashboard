@@ -130,6 +130,12 @@ export interface ApplicationSkills {
   industry: string[]
 }
 
+/** One status transition. Oldest → newest; the last entry's status === app.status. */
+export interface StatusEvent {
+  status: ApplicationStatus
+  at: string
+}
+
 export interface Application {
   id: string
   url: string
@@ -148,6 +154,8 @@ export interface Application {
   // user-set
   dateApplied: string
   status: ApplicationStatus
+  /** every status this job has been through, maintained by the store */
+  statusHistory: StatusEvent[]
   accent: Accent
   tags: string[]
   notes: string

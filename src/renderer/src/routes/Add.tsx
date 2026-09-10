@@ -163,7 +163,7 @@ export function AddApplication() {
     <div className="mx-auto max-w-3xl p-6 md:p-8">
       <div className="mb-5 flex items-center gap-3">
         <button
-          onClick={() => (phase === 'review' ? setPhase('input') : navigate('/'))}
+          onClick={() => (phase === 'review' ? setPhase('input') : navigate('/applications'))}
           className="nb-focus border-3 border-ink bg-surface px-2 py-1 text-sm font-bold shadow-hard-sm hover:-translate-y-[1px]"
         >
           ←

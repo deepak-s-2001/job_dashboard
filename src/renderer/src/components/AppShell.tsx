@@ -8,7 +8,8 @@ import { Button } from './ui/Button'
 import { TitleBar } from './TitleBar'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: '▚', end: true },
+  { to: '/', label: 'Overview', icon: '▣', end: true },
+  { to: '/applications', label: 'Applications', icon: '▤' },
   { to: '/todos', label: 'To-dos', icon: '✓' },
   { to: '/network', label: 'Network', icon: '❋' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
