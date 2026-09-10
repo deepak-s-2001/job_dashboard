@@ -121,11 +121,12 @@ export function JobInterviews({
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
                   When
-                  <input
+                  <Input
+                    size="sm"
                     type="datetime-local"
                     value={toLocalInput(iv.at)}
                     onChange={(e) => patchRound(iv.id, { at: fromLocalInput(e.target.value) })}
-                    className="mt-1 block w-full border-2 border-ink bg-surface px-2 py-1 text-[13px] font-normal outline-none"
+                    className="mt-1 font-normal"
                   />
                 </label>
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
@@ -145,14 +146,15 @@ export function JobInterviews({
                 </label>
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
                   With whom
-                  <input
+                  <Input
+                    size="sm"
                     defaultValue={iv.withWhom}
                     key={iv.id + ':who:' + iv.withWhom}
                     onBlur={(e) => {
                       if (e.target.value !== iv.withWhom) patchRound(iv.id, { withWhom: e.target.value })
                     }}
                     placeholder="Priya S (eng manager)"
-                    className="mt-1 block w-full border-2 border-ink bg-surface px-2 py-1 text-[13px] font-normal outline-none"
+                    className="mt-1 font-normal"
                   />
                 </label>
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">

@@ -37,11 +37,22 @@ export function Fieldset({
   )
 }
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  function Input({ className, ...rest }, ref) {
-    return <input ref={ref} className={cn(BASE, 'h-10', className)} {...rest} />
-  },
-)
+export const Input = forwardRef<
+  HTMLInputElement,
+  Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & { size?: 'sm' | 'md' }
+>(function Input({ className, size = 'md', ...rest }, ref) {
+  return (
+    <input
+      ref={ref}
+      className={cn(
+        BASE,
+        size === 'sm' ? 'h-9 text-[14px]' : 'h-10',
+        className,
+      )}
+      {...rest}
+    />
+  )
+})
 
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
