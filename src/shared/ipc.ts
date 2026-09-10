@@ -7,6 +7,7 @@ export const IPC = {
   appCreate: 'apps:create',
   appCreateBulk: 'apps:createBulk',
   appUpdate: 'apps:update',
+  appBulkArchive: 'apps:bulkArchive',
   appDelete: 'apps:delete',
 
   // scrape + extract

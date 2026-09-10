@@ -21,6 +21,7 @@ import { ResumePane } from '@/components/ResumePane'
 import { JobPrompt } from '@/components/JobPrompt'
 import { JobNetwork } from '@/components/JobNetwork'
 import { JobTodos } from '@/components/JobTodos'
+import { JobInterviews } from '@/components/JobInterviews'
 import { contactsForJob } from '@/lib/company'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { WorkdaySkillsBox } from '@/components/WorkdaySkillsBox'
@@ -172,6 +173,8 @@ export function Detail() {
   const net = contactsForJob(contacts, app)
   const netCount = net.matched.length + net.linked.length
   const openTodoCount = todos.filter((t) => t.applicationId === app.id && !t.done).length
+  const showInterviews =
+    app.interviews.length > 0 || app.status === 'interviewing' || app.status === 'offer'
 
   return (
     <div className="flex h-full flex-col">
@@ -306,6 +309,11 @@ export function Detail() {
               <Tab value="network" count={netCount}>
                 Network
               </Tab>
+              {showInterviews && (
+                <Tab value="interviews" count={app.interviews.length}>
+                  Interviews
+                </Tab>
+              )}
               <Tab value="todos" count={openTodoCount}>
                 To-dos
               </Tab>
@@ -390,6 +398,16 @@ export function Detail() {
                 </p>
                 <JobNetwork app={app} />
               </TabPanel>
+
+              {showInterviews && (
+                <TabPanel value="interviews">
+                  <p className="mb-3 text-[14px] text-muted">
+                    Each round, who you're meeting, and what to prep. Upcoming rounds show on the
+                    Overview.
+                  </p>
+                  <JobInterviews app={app} onPatch={patch} />
+                </TabPanel>
+              )}
 
               <TabPanel value="todos">
                 <p className="mb-3 text-[14px] text-muted">

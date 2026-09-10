@@ -30,6 +30,8 @@ const api = {
       invoke<Application[]>(IPC.appCreateBulk, inputs),
     update: (id: string, patch: Partial<Application>) =>
       invoke<Application>(IPC.appUpdate, id, patch),
+    bulkArchive: (ids: string[], archived: boolean) =>
+      invoke<number>(IPC.appBulkArchive, ids, archived),
     remove: (id: string) => invoke<boolean>(IPC.appDelete, id),
   },
   scrape: {

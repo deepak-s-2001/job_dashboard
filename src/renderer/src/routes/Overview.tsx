@@ -9,9 +9,11 @@ import {
   weekDelta,
   needsAttention,
   deltaArrow,
+  upcoming,
+  offerTimingNudge,
 } from '@/lib/metrics'
 import { groupTodos } from '@/lib/todo'
-import { SOURCE_LABEL, initials } from '@/lib/format'
+import { SOURCE_LABEL, initials, fmtDateTime, relDays } from '@/lib/format'
 import { KpiTile } from '@/components/charts/KpiTile'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { Funnel } from '@/components/charts/Funnel'
@@ -31,7 +33,7 @@ const RANGES = [
 ]
 
 export function Overview() {
-  const { apps, todos, createTodo, loading, error } = useAppData()
+  const { apps, todos, createTodo, archiveApps, loading, error } = useAppData()
   const [weeks, setWeeks] = useState('12')
 
   const kpis = useMemo(() => computeKpis(apps), [apps])
@@ -42,6 +44,8 @@ export function Overview() {
   const byTag = useMemo(() => bySegment(apps, (a) => a.tags), [apps])
   const delta = useMemo(() => weekDelta(apps), [apps])
   const attention = useMemo(() => needsAttention(apps, todos), [apps, todos])
+  const up = useMemo(() => upcoming(apps), [apps])
+  const nudge = useMemo(() => offerTimingNudge(apps), [apps])
 
   const dueTodos = useMemo(() => {
     const g = groupTodos(todos)
@@ -122,6 +126,48 @@ export function Overview() {
               )}
             </div>
 
+            {(up.length > 0 || nudge) && (
+              <div className="border-3 border-ink bg-surface rounded p-4 shadow-hard-sm">
+                <h3 className="mb-3 font-display text-base font-bold uppercase tracking-wide">
+                  Upcoming
+                </h3>
+                {nudge && (
+                  <p className="mb-3 border-l-4 border-ink bg-accent-yellow/40 px-3 py-2 text-[13px] font-semibold">
+                    {nudge}
+                  </p>
+                )}
+                {up.length === 0 ? (
+                  <p className="text-[13px] text-muted">No interviews or deadlines scheduled.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {up.slice(0, 10).map((it, i) => (
+                      <li key={i}>
+                        <Link
+                          to={`/app/${it.app.id}`}
+                          className="flex items-center gap-2.5 border-2 border-ink bg-ground px-2.5 py-1.5 text-[13px] hover:bg-surface"
+                        >
+                          <span
+                            className="border-2 border-ink px-1.5 py-0.5 text-[11px] font-bold uppercase"
+                            style={{ background: it.kind === 'deadline' ? '#ff6b57' : '#6c8cff' }}
+                          >
+                            {it.kind === 'deadline' ? 'Deadline' : 'Interview'}
+                          </span>
+                          <span className="font-bold tabular-nums">{fmtDateTime(it.at)}</span>
+                          <span className="text-muted">·</span>
+                          <span className="flex-1 truncate font-semibold">
+                            {it.label} — {it.app.company}
+                          </span>
+                          <span className="flex-none text-[12px] text-muted">
+                            {relDays(it.at) || 'soon'}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <div className="grid gap-5 lg:grid-cols-2">
               <div className="border-3 border-ink bg-surface rounded p-4 shadow-hard-sm">
                 <div className="mb-3 flex items-center gap-2">
@@ -161,9 +207,38 @@ export function Overview() {
                     </button>
                   )}
                 />
+                <AttnGroup
+                  title="Close the loop (30+ days, no reply — likely dead)"
+                  apps={attention.dead}
+                  headerAction={
+                    attention.dead.length > 0 ? (
+                      <button
+                        onClick={() => void archiveApps(attention.dead.map((a) => a.id), true)}
+                        className="border-2 border-ink bg-ground px-1.5 text-[11px] font-bold hover:bg-accent-coral"
+                      >
+                        Archive all ({attention.dead.length})
+                      </button>
+                    ) : undefined
+                  }
+                  action={(a) => (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        void archiveApps([a.id], true)
+                      }}
+                      className="border-2 border-ink bg-ground px-1.5 text-[11px] font-bold hover:bg-accent-coral"
+                    >
+                      archive
+                    </button>
+                  )}
+                />
                 <AttnGroup title="No resume attached" apps={attention.noResume} />
                 <AttnGroup title="Interviewing, no prep to-do" apps={attention.noPrep} />
-                {attention.quiet.length + attention.noResume.length + attention.noPrep.length === 0 && (
+                {attention.quiet.length +
+                  attention.dead.length +
+                  attention.noResume.length +
+                  attention.noPrep.length ===
+                  0 && (
                   <p className="text-[13px] text-muted">All clear — nothing needs a nudge.</p>
                 )}
               </div>
@@ -179,16 +254,21 @@ function AttnGroup({
   title,
   apps,
   action,
+  headerAction,
 }: {
   title: string
   apps: import('@shared/types').Application[]
   action?: (a: import('@shared/types').Application) => React.ReactNode
+  headerAction?: React.ReactNode
 }) {
   if (apps.length === 0) return null
   return (
     <div className="mb-3 last:mb-0">
-      <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">
-        {title} · {apps.length}
+      <div className="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted">
+        <span>
+          {title} · {apps.length}
+        </span>
+        {headerAction && <span className="ml-auto normal-case">{headerAction}</span>}
       </div>
       <ul className="space-y-1">
         {apps.slice(0, 5).map((a) => (

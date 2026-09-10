@@ -11,6 +11,8 @@ import {
   bySegment,
   weekDelta,
   needsAttention,
+  upcoming,
+  offerTimingNudge,
 } from './metrics'
 
 let n = 0
@@ -49,7 +51,10 @@ function app(
     companyInsights: [],
     tailoringTips: [],
     extractionRaw: null,
+    interviews: [],
+    offerDeadline: null,
     resumes: [],
+    archivedAt: null,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...over,
@@ -186,10 +191,23 @@ describe('weekDelta', () => {
 })
 
 describe('needsAttention', () => {
+  const daysAgoIso = (n: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() - n)
+    return d.toISOString().slice(0, 10) + 'T12:00:00Z'
+  }
+  it('splits quiet (14-30d) from dead (30d+), and excludes archived', () => {
+    const apps = [
+      app([['applied', daysAgoIso(20)]]),
+      app([['applied', daysAgoIso(40)]]),
+      app([['applied', daysAgoIso(40)]], { archivedAt: '2026-01-01T00:00:00Z' }),
+    ]
+    const r = needsAttention(apps, [])
+    expect(r.quiet).toHaveLength(1)
+    expect(r.dead).toHaveLength(1) // the archived one is excluded
+  })
   it('flags quiet, no-resume and no-prep', () => {
-    const old = new Date()
-    old.setDate(old.getDate() - 20)
-    const oldIso = old.toISOString().slice(0, 10) + 'T12:00:00Z'
+    const oldIso = daysAgoIso(20)
     const apps = [
       app([['applied', oldIso]]), // quiet + no resume
       app([['interviewing', '2026-01-01T12:00:00Z']]), // no prep + no resume
@@ -212,5 +230,62 @@ describe('needsAttention', () => {
       },
     ])
     expect(r2.noPrep).toHaveLength(0)
+  })
+})
+
+describe('upcoming', () => {
+  const inDays = (n: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + n)
+    return d.toISOString()
+  }
+  const iv = (at: string | null, round = 'Onsite') => ({
+    id: 'i' + Math.random(),
+    round,
+    at,
+    format: null,
+    withWhom: '',
+    prepNotes: '',
+    outcome: 'scheduled' as const,
+    createdAt: '',
+    updatedAt: '',
+  })
+
+  it('merges future interviews and offer deadlines, sorted by date', () => {
+    const a = app([['interviewing', '2026-01-01T12:00:00Z']], { interviews: [iv(inDays(5)), iv(inDays(1))] })
+    const b = app([['offer', '2026-01-01T12:00:00Z']], {
+      status: 'offer',
+      offerDeadline: inDays(3).slice(0, 10),
+    })
+    const u = upcoming([a, b])
+    expect(u.map((x) => x.kind)).toEqual(['interview', 'deadline', 'interview'])
+  })
+
+  it('drops past and cancelled interviews and archived jobs', () => {
+    const past = app([['interviewing', '2026-01-01T12:00:00Z']], { interviews: [iv(inDays(-10))] })
+    const cancelled = app([['interviewing', '2026-01-01T12:00:00Z']], {
+      interviews: [{ ...iv(inDays(2)), outcome: 'cancelled' as const }],
+    })
+    const arch = app([['interviewing', '2026-01-01T12:00:00Z']], {
+      interviews: [iv(inDays(2))],
+      archivedAt: '2026-01-01T00:00:00Z',
+    })
+    expect(upcoming([past, cancelled, arch])).toEqual([])
+  })
+})
+
+describe('offerTimingNudge', () => {
+  const inDays = (n: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + n)
+    return d.toISOString().slice(0, 10)
+  }
+  it('fires only with a near deadline AND another live interviewing process', () => {
+    const offer = app([['offer', '2026-01-01T12:00:00Z']], { status: 'offer', offerDeadline: inDays(4) })
+    const other = app([['interviewing', '2026-01-01T12:00:00Z']])
+    expect(offerTimingNudge([offer, other])).toContain('due soon')
+    expect(offerTimingNudge([offer])).toBeNull() // no other process
+    const farOffer = app([['offer', '2026-01-01T12:00:00Z']], { status: 'offer', offerDeadline: inDays(30) })
+    expect(offerTimingNudge([farOffer, other])).toBeNull() // deadline not near
   })
 })

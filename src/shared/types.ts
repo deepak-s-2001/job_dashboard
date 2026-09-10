@@ -136,6 +136,50 @@ export interface StatusEvent {
   at: string
 }
 
+// ---------- Interviews ----------
+
+export type InterviewFormat = 'phone' | 'video' | 'onsite' | 'take-home' | 'panel' | 'other'
+export type InterviewOutcome = 'scheduled' | 'passed' | 'failed' | 'cancelled' | 'no-show'
+
+export const INTERVIEW_FORMATS: InterviewFormat[] = [
+  'phone',
+  'video',
+  'onsite',
+  'take-home',
+  'panel',
+  'other',
+]
+export const INTERVIEW_OUTCOMES: InterviewOutcome[] = [
+  'scheduled',
+  'passed',
+  'failed',
+  'cancelled',
+  'no-show',
+]
+export const INTERVIEW_ROUND_PRESETS = [
+  'Recruiter screen',
+  'Phone screen',
+  'Technical',
+  'Hiring manager',
+  'Onsite',
+  'System design',
+  'Behavioral',
+  'Final',
+]
+
+export interface Interview {
+  id: string
+  round: string
+  /** ISO datetime — has a time-of-day, unlike Todo.dueDate */
+  at: string | null
+  format: InterviewFormat | null
+  withWhom: string
+  prepNotes: string
+  outcome: InterviewOutcome
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Application {
   id: string
   url: string
@@ -174,8 +218,14 @@ export interface Application {
   tailoringTips: string[]
   extractionRaw: unknown
 
+  // interview stage
+  interviews: Interview[]
+  offerDeadline: string | null // 'YYYY-MM-DD'
+
   // attachments / bookkeeping
   resumes: Resume[]
+  /** set = hidden from the board; still counts in all-time metrics */
+  archivedAt: string | null
   createdAt: string
   updatedAt: string
 }

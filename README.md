@@ -1,19 +1,33 @@
 # Job Dashboard
 
 A local, offline **Windows desktop app** for running a job search — every application, the
-posting and its skills, the resume you sent, the people who could refer you, the follow-ups,
-and a dashboard of how it's all going.
+posting and its skills, the resume you sent, the people who could refer you, the interviews and
+follow-ups, and a dashboard that tells you what's actually working.
+
+**Free and open-source. No account, no subscription, no data leaves your machine.**
 
 Paste a job link and the app reads the company, role, description and date for you. Press
 **Extract** and one small Claude call pulls out the skills, a summary, "what this company
 values", and concrete tailoring tips. Attach the resume you sent. Track it through the pipeline
-and the **Overview** page turns it into a funnel, response rates, and a weekly trend.
+and the **Overview** turns it into a funnel, response rates, a weekly trend, an interview
+calendar, and a "close the loop" list of applications that have gone dead.
 
 ![Overview](docs/overview.png)
 
-Everything stays on your machine. There is **no account, no server, no sync**. The only network
-calls are to the job site you paste (to read the posting) and — only when you press **Extract**
-— to the Anthropic API with your own key.
+### vs. the alternatives
+
+| | Job Dashboard | Huntr / Teal | Simplify / LazyApply | A spreadsheet |
+|---|---|---|---|---|
+| Price | **free, open-source** | $9–40 / week or month, hard to cancel | subscription | free |
+| Your data | **100% on your machine** | their cloud; [job platforms sell data](#your-data--privacy) | their cloud | yours |
+| Keeps itself useful | dashboard + nudges | goes stale like any tracker | — | dies by week two |
+| Tells you what's working | **funnel, response rate by source/resume, benchmarks** | partial (paywalled) | no | you build the formulas |
+| Autofills applications | **no — on purpose** (autofill is unreliable and tanks your ATS reputation) | some | that's the pitch | no |
+| Interview stage | **per-round log + cross-job calendar** | one "interviewing" status | no | you improvise |
+
+Everything stays on your machine. There is **no account, no server, no sync, no telemetry**.
+The only network calls are to the job site you paste (to read the posting) and — only when you
+press **Extract** — to the Anthropic API with *your* key.
 
 ---
 
@@ -150,20 +164,32 @@ Withdrawn**. Every transition is timestamped, so the **Overview** (home) page ca
 - **Applications over time** — a weekly line of *applied* vs *responded* (toggle cumulative)
 - **Funnel** — Applied → Responded → Interviewed → Offered, with the drop-off at each step
 - **Response rate by source** and **by tag** — which channels actually reply
-- **To-dos** due now, and **Needs attention** — jobs gone quiet 14+ days, missing a resume, or
-  interviewing with no prep to-do
+- **Upcoming** — every scheduled interview and offer deadline across all jobs, on one timeline,
+  with a nudge when an offer is due while other processes are still mid-interview
+- **To-dos** due now, and **Needs attention** — quiet 14+ days, **likely dead (30+ days, "archive
+  all")**, missing a resume, or interviewing with no prep to-do
 
 A **response** = any reply, *including a rejection* — it means a human saw your application.
 Only *Ghosted* counts as no response. It's all visual — no pop-ups, no notifications.
 
-### 5. Everything after that is browsing
+### 5. The interview stage
+
+![Interviews](docs/interviews.png)
+
+Once a job is interviewing, an **Interviews** tab appears — log each round (who, when, format,
+outcome, prep notes), set the **offer decision deadline**, and one click turns any round into a
+dated prep to-do. It all feeds the **Upcoming** timeline so you can see whether to speed a
+process up or ask another to wait.
+
+### 6. Everything after that is browsing
 
 ![Detail view](docs/detail.png)
 
 The **Applications** tab is the card board — search, the filter rail, sort. Each job's detail
-view has the resume beside tabs for **Description · Skills · Insights · Tips · Network · To-dos
-· Prompt · Notes · Details**. Page between jobs with the arrows (or `[` / `]`), and the paging
-respects whatever search or filter you had on the board.
+view has the resume beside tabs for **Description · Skills · Insights · Tips · Network ·
+Interviews · To-dos · Prompt · Notes · Details** (Interviews only shows once it's relevant).
+Page between jobs with the arrows (or `[` / `]`), and the paging respects whatever search or
+filter you had on the board.
 
 ### The "Prompt" tab
 
@@ -254,7 +280,9 @@ OS notifications, ever.
 | Import in bulk | Sidebar **Import** → paste many job links (each is scraped), or paste a CSV / Huntr / Teal export and map the columns |
 | Browse the board | **Applications** tab — the card grid |
 | Search | The search box in the **Find** panel — fuzzy match across company, role, skills, description, notes |
-| Filter | **Find** panel — status, employment type, workplace, applied-date range, tag, source board, "has a resume", "AI-extracted" |
+| Log an interview | Job → **Interviews** tab (appears once it's interviewing) — round, when, who, format, outcome, prep notes; set the offer deadline |
+| Clear out dead applications | **Overview → Needs attention → Close the loop → Archive all** (kept, just hidden; still counts in the funnel) |
+| Filter | **Find** panel — status, employment type, workplace, applied-date range, tag, source board, "has a resume", "AI-extracted", "archived" |
 | Sort | **Find** panel — newest/oldest applied, recently posted, company A–Z |
 | Track status | Per job: **Not applied → Applied → Interviewing → Offer / Rejected / Ghosted / Withdrawn**. New jobs start **Not applied**; flip to **Applied** when you submit and it stamps the date. |
 | Tag jobs | Free-text tags with colours (e.g. `dream`, `referral`) |
@@ -278,7 +306,7 @@ Everything lives in one folder in your Windows profile:
 
 ```
 %APPDATA%\job-dashboard\
-├─ db.json                  applications + contacts + to-dos + your sign-off (plain JSON)
+├─ db.json                  applications, interviews, contacts, to-dos, your sign-off (plain JSON)
 ├─ resumes\<job-id>\*.pdf   copies of the resumes you attached
 ├─ backups\db-*.json        automatic snapshots of db.json (last 20)
 └─ secrets.bin              your Anthropic API key, encrypted by Windows (DPAPI)
@@ -287,7 +315,10 @@ Everything lives in one folder in your Windows profile:
 - **None of this is in this repository.** The repo is code only. A fresh install starts with
   an empty `db.json` and no key. Your applications, resumes and key are yours and stay on your
   machine.
-- **No telemetry, no analytics, no auto-update, no account.**
+- **No telemetry, no analytics, no auto-update, no account — and nothing is ever sold.**
+  Investigations have found [8 of 9 job-search platforms sell user data](https://privacyrights.org/resources-tools/advocacy/job-search-industry-privacy-concerns-letter-federal-trade-commission)
+  and share it with an average of 5+ third parties. This app makes **zero** network calls
+  except to the job page you paste and (only on **Extract**) to Anthropic with your own key.
 - The renderer (the UI) is sandboxed and — enforced by a Content-Security-Policy — cannot make
   any network request at all. The scraping happens in the main process; the one AI call
   happens in the main process with your key, which the UI can never read.

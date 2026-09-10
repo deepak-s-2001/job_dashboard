@@ -70,12 +70,31 @@ export function fmtDate(iso: string | null | undefined): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+export function fmtDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const hasTime = /T\d\d:\d\d/.test(iso) && !/T00:00/.test(iso)
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(hasTime ? { hour: 'numeric', minute: '2-digit' } : {}),
+  })
+}
+
 export function relDays(iso: string | null | undefined): string {
   if (!iso) return ''
   const d = new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso)
   const diff = Math.round((Date.now() - d.getTime()) / 86_400_000)
-  if (diff <= 0) return 'today'
+  if (diff === 0) return 'today'
   if (diff === 1) return 'yesterday'
+  if (diff === -1) return 'tomorrow'
+  if (diff < 0) {
+    const f = -diff
+    if (f < 30) return `in ${f}d`
+    if (f < 365) return `in ${Math.round(f / 30)}mo`
+    return `in ${Math.round(f / 365)}y`
+  }
   if (diff < 30) return `${diff}d ago`
   if (diff < 365) return `${Math.round(diff / 30)}mo ago`
   return `${Math.round(diff / 365)}y ago`

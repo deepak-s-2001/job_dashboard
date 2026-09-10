@@ -127,6 +127,9 @@ export function snapshot(): void {
 /** Fill fields added in later versions on an application loaded from disk. */
 function migrateApplication(a: Application): void {
   a.contactIds ??= []
+  a.interviews ??= []
+  a.offerDeadline ??= null
+  a.archivedAt ??= null
   if (!a.statusHistory || a.statusHistory.length === 0) {
     a.statusHistory = [
       { status: a.status, at: a.dateApplied ? `${a.dateApplied}T12:00:00.000Z` : a.createdAt },
@@ -280,6 +283,9 @@ function buildApplication(input: NewApplicationInput, ts: string): Application {
     dateApplied: input.dateApplied,
     status: input.status,
     statusHistory: [{ status: input.status, at: seedStatusAt(input.dateApplied, ts) }],
+    interviews: [],
+    offerDeadline: null,
+    archivedAt: null,
     accent: pickAccent(id + input.company),
     tags: dedupeTags(input.tags),
     notes: input.notes ?? '',
@@ -349,6 +355,9 @@ const MUTABLE_FIELDS: (keyof Application)[] = [
   'skills',
   'companyInsights',
   'tailoringTips',
+  'interviews',
+  'offerDeadline',
+  'archivedAt',
 ]
 
 export async function updateApplication(
@@ -411,6 +420,21 @@ export async function deleteApplication(id: string): Promise<void> {
 
 export function mutateApplication(id: string): Application | undefined {
   return db.data.applications.find((a) => a.id === id)
+}
+
+export async function bulkArchive(ids: string[], archived: boolean): Promise<number> {
+  const set = new Set(ids)
+  const ts = archived ? nowIso() : null
+  let n = 0
+  for (const a of db.data.applications) {
+    if (set.has(a.id) && !!a.archivedAt !== archived) {
+      a.archivedAt = ts
+      a.updatedAt = nowIso()
+      n++
+    }
+  }
+  if (n) await db.write()
+  return n
 }
 
 export async function persist(): Promise<void> {

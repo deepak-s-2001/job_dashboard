@@ -14,6 +14,7 @@ export interface Filters {
   appliedTo: string | null
   hasResume: 'any' | 'yes' | 'no'
   extracted: 'any' | 'yes' | 'no'
+  archived: 'hide' | 'only' | 'all'
 }
 
 export const EMPTY_FILTERS: Filters = {
@@ -26,6 +27,7 @@ export const EMPTY_FILTERS: Filters = {
   appliedTo: null,
   hasResume: 'any',
   extracted: 'any',
+  archived: 'hide',
 }
 
 export function filtersActive(f: Filters): number {
@@ -38,11 +40,15 @@ export function filtersActive(f: Filters): number {
     (f.appliedFrom ? 1 : 0) +
     (f.appliedTo ? 1 : 0) +
     (f.hasResume !== 'any' ? 1 : 0) +
-    (f.extracted !== 'any' ? 1 : 0)
+    (f.extracted !== 'any' ? 1 : 0) +
+    (f.archived !== 'hide' ? 1 : 0)
   )
 }
 
 function passesFilters(a: Application, f: Filters): boolean {
+  const archived = !!a.archivedAt
+  if (f.archived === 'hide' && archived) return false
+  if (f.archived === 'only' && !archived) return false
   if (f.status.length && !f.status.includes(a.status)) return false
   if (f.employmentType.length && !(a.employmentType && f.employmentType.includes(a.employmentType)))
     return false

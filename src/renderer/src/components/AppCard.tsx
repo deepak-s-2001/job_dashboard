@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { Application } from '@shared/types'
 import { ACCENT_HEX, SOURCE_LABEL, fmtDate, initials, relDays, titleCase } from '@/lib/format'
+import { useAppData } from '@/lib/store'
 import { StatusPill } from './StatusControl'
 
 export const AppCard = memo(function AppCard({
@@ -12,6 +13,8 @@ export const AppCard = memo(function AppCard({
   app: Application
   contactCount?: number
 }) {
+  const { archiveApps } = useAppData()
+  const archived = !!app.archivedAt
   const accent = ACCENT_HEX[app.accent]
   const skillCount =
     app.skills.required.length + app.skills.preferred.length + app.skills.industry.length
@@ -28,9 +31,23 @@ export const AppCard = memo(function AppCard({
     >
       <Link
         to={`/app/${app.id}`}
-        className="nb-focus group flex flex-col border-3 border-ink bg-surface rounded shadow-hard transition-shadow hover:shadow-hard-lg"
+        className={`nb-focus group flex flex-col border-3 border-ink bg-surface rounded shadow-hard transition-shadow hover:shadow-hard-lg ${archived ? 'opacity-60' : ''}`}
       >
         <div className="h-2.5 w-full flex-none border-b-3 border-ink" style={{ background: accent }} />
+        {archived && (
+          <div className="flex items-center gap-2 border-b-2 border-dashed border-ink/50 bg-ground px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-muted">
+            Archived
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                void archiveApps([app.id], false)
+              }}
+              className="ml-auto border-2 border-ink bg-surface px-1.5 text-[11px] normal-case hover:bg-accent-lime"
+            >
+              un-archive
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 p-4 pb-3.5">
           <div className="flex items-start gap-3">

@@ -265,6 +265,24 @@ export function FilterRail({
             value={filters.extracted}
             onChange={(v) => onChange({ ...filters, extracted: v })}
           />
+          <div className="flex items-center justify-between gap-2 py-0.5">
+            <span className="text-[14px] font-semibold">Archived</span>
+            <div className="flex border-2 border-ink">
+              {(['hide', 'only', 'all'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => onChange({ ...filters, archived: v })}
+                  className={cn(
+                    'px-1.5 py-0.5 text-[11px] font-bold uppercase',
+                    filters.archived === v ? 'bg-ink text-ground' : 'bg-surface hover:bg-ground',
+                    v !== 'hide' && 'border-l-2 border-ink',
+                  )}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
         </Group>
       </div>
     </div>

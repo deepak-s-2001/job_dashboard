@@ -37,6 +37,7 @@ interface AppData {
   createApp: (input: NewApplicationInput) => Promise<Application>
   createAppsBulk: (inputs: NewApplicationInput[]) => Promise<Application[]>
   updateApp: (id: string, patch: Partial<Application>) => Promise<Application>
+  archiveApps: (ids: string[], archived: boolean) => Promise<void>
   removeApp: (id: string) => Promise<void>
   createContact: (input: NewContactInput) => Promise<Contact>
   updateContact: (id: string, patch: Partial<Contact>) => Promise<Contact>
@@ -128,6 +129,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const created = await call(api.apps.createBulk(inputs))
       await refresh()
       return created
+    },
+    [refresh],
+  )
+
+  const archiveApps = useCallback(
+    async (ids: string[], archived: boolean) => {
+      await call(api.apps.bulkArchive(ids, archived))
+      await refresh()
     },
     [refresh],
   )
@@ -247,6 +256,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       createApp,
       createAppsBulk,
       updateApp,
+      archiveApps,
       removeApp,
       createContact,
       updateContact,
@@ -260,7 +270,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }),
     [
       apps, contacts, todos, tags, settings, usage, loading, error, refresh, refreshMeta,
-      createApp, createAppsBulk, updateApp, removeApp, createContact, updateContact,
+      createApp, createAppsBulk, updateApp, archiveApps, removeApp, createContact, updateContact,
       removeContact, linkContact, unlinkContact, createTodo, updateTodo, removeTodo, saveProfile,
     ],
   )

@@ -17,6 +17,7 @@ import type {
 import {
   createApplication,
   bulkCreateApplications,
+  bulkArchive,
   deleteApplication,
   getApplication,
   listApplications,
@@ -86,6 +87,10 @@ export function registerIpc(): void {
 
   ipcMain.handle(IPC.appCreateBulk, (_e, inputs: NewApplicationInput[]) =>
     guard(() => bulkCreateApplications(inputs)),
+  )
+
+  ipcMain.handle(IPC.appBulkArchive, (_e, ids: string[], archived: boolean) =>
+    guard(() => bulkArchive(ids, archived)),
   )
 
   ipcMain.handle(IPC.appUpdate, (_e, id: string, patch: Partial<Application>) =>

@@ -226,29 +226,82 @@ export function weekDelta(apps: Application[]): WeekDelta {
 
 export interface Attention {
   quiet: Application[]
+  dead: Application[]
   noResume: Application[]
   noPrep: Application[]
 }
 
-export function needsAttention(apps: Application[], todos: Todo[], quietDays = 14): Attention {
+export function needsAttention(
+  apps: Application[],
+  todos: Todo[],
+  quietDays = 14,
+  deadDays = 30,
+): Attention {
   const now = Date.now()
+  const live = apps.filter((a) => !a.archivedAt)
   const openByJob = new Set(
     todos.filter((t) => !t.done && t.applicationId).map((t) => t.applicationId as string),
   )
+  const ageDays = (a: Application) => (now - new Date(appliedAt(a)).getTime()) / DAY
+  const stale = live
+    .filter((a) => a.status === 'applied' && !respondedAt(a))
+    .sort((a, b) => appliedAt(a).localeCompare(appliedAt(b)))
   return {
-    quiet: apps
-      .filter(
-        (a) =>
-          a.status === 'applied' &&
-          !respondedAt(a) &&
-          (now - new Date(appliedAt(a)).getTime()) / DAY > quietDays,
-      )
-      .sort((a, b) => appliedAt(a).localeCompare(appliedAt(b))),
-    noResume: apps.filter(
+    quiet: stale.filter((a) => ageDays(a) > quietDays && ageDays(a) <= deadDays),
+    dead: stale.filter((a) => ageDays(a) > deadDays),
+    noResume: live.filter(
       (a) => (a.status === 'applied' || a.status === 'interviewing') && a.resumes.length === 0,
     ),
-    noPrep: apps.filter((a) => a.status === 'interviewing' && !openByJob.has(a.id)),
+    noPrep: live.filter((a) => a.status === 'interviewing' && !openByJob.has(a.id)),
   }
+}
+
+// ---------- upcoming (interviews + offer deadlines) ----------
+
+export interface UpcomingItem {
+  kind: 'interview' | 'deadline'
+  at: string // ISO
+  app: Application
+  label: string
+}
+
+export function upcoming(apps: Application[]): UpcomingItem[] {
+  const now = Date.now()
+  const out: UpcomingItem[] = []
+  for (const a of apps) {
+    if (a.archivedAt) continue
+    for (const iv of a.interviews ?? []) {
+      if (iv.at && new Date(iv.at).getTime() >= now - DAY && iv.outcome !== 'cancelled') {
+        out.push({ kind: 'interview', at: iv.at, app: a, label: iv.round || 'Interview' })
+      }
+    }
+    if (a.offerDeadline && a.status === 'offer') {
+      const at = `${a.offerDeadline}T23:59:00`
+      if (new Date(at).getTime() >= now - DAY) {
+        out.push({ kind: 'deadline', at, app: a, label: 'Offer decision due' })
+      }
+    }
+  }
+  return out.sort((x, y) => x.at.localeCompare(y.at))
+}
+
+/** When an offer deadline is close and other processes are mid-interview, suggest re-timing. */
+export function offerTimingNudge(apps: Application[]): string | null {
+  const now = Date.now()
+  const soon = apps.find(
+    (a) =>
+      !a.archivedAt &&
+      a.status === 'offer' &&
+      a.offerDeadline &&
+      (new Date(`${a.offerDeadline}T23:59:00`).getTime() - now) / DAY <= 7 &&
+      (new Date(`${a.offerDeadline}T23:59:00`).getTime() - now) >= -DAY,
+  )
+  if (!soon) return null
+  const others = apps.filter((a) => !a.archivedAt && a.status === 'interviewing').length
+  if (others === 0) return null
+  return `Offer from ${soon.company} is due soon and you have ${others} other process${
+    others === 1 ? '' : 'es'
+  } still interviewing — consider asking ${soon.company} for a few more days, or the others to expedite.`
 }
 
 export const deltaArrow = (now: number, prev: number): string =>
