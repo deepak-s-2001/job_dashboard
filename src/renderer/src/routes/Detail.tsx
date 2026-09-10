@@ -25,6 +25,7 @@ import { JobTodos } from '@/components/JobTodos'
 import { JobInterviews } from '@/components/JobInterviews'
 import { NotesEditor } from '@/components/NotesEditor'
 import { LocationInput } from '@/components/LocationInput'
+import { DateField } from '@/components/ui/DatePicker'
 import { contactsForJob } from '@/lib/company'
 import { SkillGroup, InsightList } from '@/components/SkillGroup'
 import { WorkdaySkillsBox } from '@/components/WorkdaySkillsBox'
@@ -561,10 +562,10 @@ function DetailsForm({
         />
       </Field>
       <Field label="Date posted">
-        <Input type="date" defaultValue={app.datePosted ?? ''} onBlur={(e) => commit(e.target.value, app.datePosted ?? '', (v) => onPatch({ datePosted: v || null }))} />
+        <DateField value={app.datePosted ?? null} onChange={(v) => onPatch({ datePosted: v })} />
       </Field>
       <Field label="Date applied">
-        <Input type="date" defaultValue={app.dateApplied} onBlur={(e) => commit(e.target.value, app.dateApplied, (v) => onPatch({ dateApplied: v }))} />
+        <DateField value={app.dateApplied || null} onChange={(v) => onPatch({ dateApplied: v ?? '' })} />
       </Field>
       <div className="sm:col-span-2">
         <Field label="Tags">

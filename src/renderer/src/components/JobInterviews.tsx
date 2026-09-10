@@ -8,6 +8,7 @@ import { useAppData } from '@/lib/store'
 import { useToast } from './ui/Toast'
 import { Button } from './ui/Button'
 import { Input, Textarea, Select, Fieldset } from './ui/Field'
+import { DateField, DateTimeField } from './ui/DatePicker'
 import { titleCase } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
@@ -21,10 +22,6 @@ const OUTCOME_COLOR: Record<string, string> = {
   cancelled: '#9ca3af',
   'no-show': '#9ca3af',
 }
-
-/** naive local-ISO for <input type="datetime-local"> round-trips */
-const toLocalInput = (iso: string | null) => (iso ? iso.slice(0, 16) : '')
-const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null)
 
 export function JobInterviews({
   app,
@@ -74,12 +71,10 @@ export function JobInterviews({
 
   return (
     <div className="space-y-4">
-      <Fieldset label="Offer decision deadline">
-        <Input
-          type="date"
-          value={app.offerDeadline ?? ''}
-          onChange={(e) => void onPatch({ offerDeadline: e.target.value || null })}
-          className="max-w-[200px]"
+      <Fieldset label="Offer decision deadline" className="max-w-[220px]">
+        <DateField
+          value={app.offerDeadline ?? null}
+          onChange={(v) => void onPatch({ offerDeadline: v })}
         />
       </Fieldset>
 
@@ -121,13 +116,14 @@ export function JobInterviews({
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
                   When
-                  <Input
-                    size="sm"
-                    type="datetime-local"
-                    value={toLocalInput(iv.at)}
-                    onChange={(e) => patchRound(iv.id, { at: fromLocalInput(e.target.value) })}
-                    className="mt-1 font-normal"
-                  />
+                  <div className="mt-1 font-normal">
+                    <DateTimeField
+                      size="sm"
+                      ariaLabel="Interview date and time"
+                      value={iv.at}
+                      onChange={(v) => patchRound(iv.id, { at: v })}
+                    />
+                  </div>
                 </label>
                 <label className="text-[12px] font-bold uppercase tracking-wide text-muted">
                   Format

@@ -10,6 +10,7 @@ import { Spinner, Divider } from '@/components/ui/misc'
 import { TagInput } from '@/components/TagInput'
 import { StatusControl } from '@/components/StatusControl'
 import { LocationInput } from '@/components/LocationInput'
+import { DateField } from '@/components/ui/DatePicker'
 import { todayIso, titleCase } from '@/lib/format'
 import {
   DEFAULT_STATUS,
@@ -287,18 +288,16 @@ export function AddApplication() {
                 />
               </Fieldset>
               <Fieldset label="Date posted">
-                <Input
-                  type="date"
-                  value={form.datePosted}
-                  onChange={(e) => set('datePosted', e.target.value)}
+                <DateField
+                  value={form.datePosted || null}
+                  onChange={(v) => set('datePosted', v ?? '')}
                 />
               </Fieldset>
               <Fieldset label="Date applied">
-                <Input
-                  type="date"
-                  value={form.status === 'not-applied' ? '' : form.dateApplied}
+                <DateField
+                  value={form.status === 'not-applied' ? null : form.dateApplied || null}
                   disabled={form.status === 'not-applied'}
-                  onChange={(e) => set('dateApplied', e.target.value)}
+                  onChange={(v) => set('dateApplied', v ?? '')}
                 />
               </Fieldset>
             </div>
