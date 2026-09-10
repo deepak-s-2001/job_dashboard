@@ -36,6 +36,7 @@ function app(
     salaryMin: null,
     salaryMax: null,
     salaryPeriod: null,
+    jobPostingId: null,
     jdText: '',
     dateApplied: statusHistory[0]?.at.slice(0, 10) ?? '2026-01-01',
     status: last?.status ?? 'not-applied',

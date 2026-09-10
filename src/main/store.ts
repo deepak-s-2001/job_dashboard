@@ -140,6 +140,7 @@ function migrateApplication(a: Application): void {
   a.salaryMin ??= null
   a.salaryMax ??= null
   a.salaryPeriod ??= null
+  a.jobPostingId ??= null
   if (!a.statusHistory || a.statusHistory.length === 0) {
     a.statusHistory = [
       { status: a.status, at: a.dateApplied ? `${a.dateApplied}T12:00:00.000Z` : a.createdAt },
@@ -278,21 +279,24 @@ function seedStatusAt(dateApplied: string, ts: string): string {
 function buildApplication(input: NewApplicationInput, ts: string): Application {
   const id = genId(12)
   const ex = input.extraction
-  const parsed = parseSalary(input.salaryRange)
+  // hard facts: the user's form value wins; fall back to what the AI pulled from the JD body
+  const salaryRange = input.salaryRange ?? ex?.salaryRaw ?? null
+  const parsed = parseSalary(salaryRange)
   return {
     id,
     url: input.url,
     sourceSite: input.sourceSite,
     company: input.company.trim(),
     roleTitle: input.roleTitle.trim(),
-    location: input.location,
+    location: input.location ?? ex?.location ?? null,
     workplaceType: input.workplaceType,
     employmentType: input.employmentType,
-    datePosted: input.datePosted,
-    salaryRange: input.salaryRange,
-    salaryMin: input.salaryMin ?? parsed.min,
-    salaryMax: input.salaryMax ?? parsed.max,
-    salaryPeriod: input.salaryPeriod ?? parsed.period,
+    datePosted: input.datePosted ?? ex?.datePosted ?? null,
+    salaryRange,
+    salaryMin: input.salaryMin ?? ex?.salaryMin ?? parsed.min,
+    salaryMax: input.salaryMax ?? ex?.salaryMax ?? parsed.max,
+    salaryPeriod: input.salaryPeriod ?? ex?.salaryPeriod ?? parsed.period,
+    jobPostingId: input.jobPostingId ?? ex?.jobPostingId ?? null,
     jdText: input.jdText,
     dateApplied: input.dateApplied,
     status: input.status,
@@ -360,6 +364,7 @@ const MUTABLE_FIELDS: (keyof Application)[] = [
   'salaryMin',
   'salaryMax',
   'salaryPeriod',
+  'jobPostingId',
   'jdText',
   'dateApplied',
   'status',
@@ -420,6 +425,14 @@ export async function applyExtraction(
   }
   app_.companyInsights = ex.companyInsights
   app_.tailoringTips = ex.tailoringTips
+  // fill hard facts only where the user hasn't already set them
+  if (!app_.location && ex.location) app_.location = ex.location
+  if (!app_.datePosted && ex.datePosted) app_.datePosted = ex.datePosted
+  if (!app_.jobPostingId && ex.jobPostingId) app_.jobPostingId = ex.jobPostingId
+  if (!app_.salaryRange && ex.salaryRaw) app_.salaryRange = ex.salaryRaw
+  if (app_.salaryMin == null && ex.salaryMin != null) app_.salaryMin = ex.salaryMin
+  if (app_.salaryMax == null && ex.salaryMax != null) app_.salaryMax = ex.salaryMax
+  if (!app_.salaryPeriod && ex.salaryPeriod) app_.salaryPeriod = ex.salaryPeriod
   app_.extractionRaw = ex._raw
   app_.updatedAt = nowIso()
   await db.write()

@@ -18,6 +18,7 @@ const EMPTY: Omit<ScrapedJob, 'url' | 'jdText' | 'needsManualPaste' | 'note'> = 
   salaryMin: null,
   salaryMax: null,
   salaryPeriod: null,
+  jobPostingId: null,
 }
 
 /** fill the numeric salary fields from whatever raw string we scraped */

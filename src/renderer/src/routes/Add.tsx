@@ -38,6 +38,7 @@ interface FormState {
   salaryMax: string
   salaryPeriod: SalaryPeriod | ''
   salaryRaw: string
+  jobPostingId: string
   jdText: string
   dateApplied: string
   status: ApplicationStatus
@@ -59,6 +60,7 @@ function fromScrape(s: ScrapedJob): FormState {
     salaryMax: s.salaryMax != null ? String(s.salaryMax) : '',
     salaryPeriod: s.salaryPeriod ?? (s.salaryMin != null ? 'year' : ''),
     salaryRaw: s.salaryRange ?? '',
+    jobPostingId: s.jobPostingId ?? '',
     jdText: s.jdText,
     dateApplied: todayIso(),
     status: DEFAULT_STATUS,
@@ -155,6 +157,7 @@ export function AddApplication() {
         salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
         salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
         salaryPeriod: form.salaryPeriod || null,
+        jobPostingId: form.jobPostingId.trim() || null,
         jdText: form.jdText.trim(),
         dateApplied: form.dateApplied,
         status: form.status,
@@ -300,6 +303,13 @@ export function AddApplication() {
                   onChange={(v) => set('dateApplied', v ?? '')}
                 />
               </Fieldset>
+              <Fieldset label="Job posting ID" hint="req / posting number">
+                <Input
+                  value={form.jobPostingId}
+                  onChange={(e) => set('jobPostingId', e.target.value)}
+                  placeholder="e.g. REQ-20481"
+                />
+              </Fieldset>
             </div>
 
             <Fieldset
@@ -402,6 +412,7 @@ const BLANK_SCRAPE: ScrapedJob = {
   salaryMin: null,
   salaryMax: null,
   salaryPeriod: null,
+  jobPostingId: null,
   jdText: '',
   needsManualPaste: true,
   note: '',

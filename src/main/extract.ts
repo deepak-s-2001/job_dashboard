@@ -22,7 +22,15 @@ Rules:
 - In companyInsights and tailoringTips ONLY, wrap the single most important phrase of each sentence (the part the reader must not miss — a keyword, a number, a name, the actionable verb phrase) in ==double equals==. One marked span per sentence, occasionally two; never mark a whole sentence.
 - seniority: your read of the level from the text ("entry-level", "mid", "senior", "staff", "lead / manager"), or null if genuinely unclear.
 - jdSummary: 2-3 plain sentences on what this role is.
-- responsibilities: the core duties, lightly normalized, from the JD.`
+- responsibilities: the core duties, lightly normalized, from the JD.
+
+Hard facts — extract ONLY when the job description text genuinely states them. If a value is not in the text, return null. Never guess, never infer from the company name or your own knowledge, never carry a value over from one field to another.
+- location: the work location exactly as the JD frames it — "San Francisco, CA", "Remote (US)", "Hybrid — London", "Multiple locations". null if unstated.
+- datePosted: the date the posting says it was posted / published / updated, as YYYY-MM-DD. Resolve relative phrasing ("Posted 3 days ago") only if the JD also gives an absolute reference date; otherwise null.
+- jobPostingId: the employer's requisition or posting number if the JD prints one ("Req ID: R-2024-5567", "Job ID 20481", "Posting Number: PRN12345"). Just the identifier, no label. null if absent.
+- salaryRaw: the pay / compensation text exactly as written in the JD ("$150,000–$190,000 per year", "£45k plus bonus", "$60–75/hour"), including any range and unit. Pull it from anywhere in the body, not just a dedicated section. null if the JD states no pay figure.
+- salaryMin / salaryMax: the numeric bounds of that pay figure as plain numbers (150000, 190000 — expand "150k"). If only one number is given, put it in salaryMin and leave salaryMax null. null when there is no figure.
+- salaryPeriod: "year" or "hour" — whichever the pay figure is expressed in. null when there is no figure or the unit is unclear.`
 
 const TOOL_SCHEMA = {
   type: 'object' as const,
@@ -35,6 +43,13 @@ const TOOL_SCHEMA = {
     industryKeywords: { type: 'array' as const, items: { type: 'string' as const } },
     companyInsights: { type: 'array' as const, items: { type: 'string' as const } },
     tailoringTips: { type: 'array' as const, items: { type: 'string' as const } },
+    location: { type: ['string', 'null'] as const },
+    datePosted: { type: ['string', 'null'] as const },
+    jobPostingId: { type: ['string', 'null'] as const },
+    salaryRaw: { type: ['string', 'null'] as const },
+    salaryMin: { type: ['number', 'null'] as const },
+    salaryMax: { type: ['number', 'null'] as const },
+    salaryPeriod: { type: ['string', 'null'] as const, description: 'exactly "year" or "hour", or null' },
   },
   required: [
     'seniority',
@@ -45,6 +60,13 @@ const TOOL_SCHEMA = {
     'industryKeywords',
     'companyInsights',
     'tailoringTips',
+    'location',
+    'datePosted',
+    'jobPostingId',
+    'salaryRaw',
+    'salaryMin',
+    'salaryMax',
+    'salaryPeriod',
   ],
   additionalProperties: false,
 }
@@ -54,6 +76,33 @@ export class ExtractionError extends Error {}
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return []
   return v.map((x) => String(x).trim()).filter(Boolean)
+}
+
+function asStrOrNull(v: unknown): string | null {
+  if (v === null || v === undefined) return null
+  const s = String(v).trim()
+  return s ? s : null
+}
+
+function asNumOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.]/g, ''))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function asPeriod(v: unknown): 'year' | 'hour' | null {
+  return v === 'year' || v === 'hour' ? v : null
+}
+
+/** normalize a model-supplied date to 'YYYY-MM-DD', or null if not a plausible date */
+function asIsoDate(v: unknown): string | null {
+  const s = asStrOrNull(v)
+  if (!s) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s)
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString().slice(0, 10)
 }
 
 export async function extractJd(params: {
@@ -136,6 +185,13 @@ export async function extractJd(params: {
     industryKeywords: asStringArray(raw.industryKeywords),
     companyInsights: asStringArray(raw.companyInsights),
     tailoringTips: asStringArray(raw.tailoringTips),
+    location: asStrOrNull(raw.location),
+    datePosted: asIsoDate(raw.datePosted),
+    jobPostingId: asStrOrNull(raw.jobPostingId),
+    salaryRaw: asStrOrNull(raw.salaryRaw),
+    salaryMin: asNumOrNull(raw.salaryMin),
+    salaryMax: asNumOrNull(raw.salaryMax),
+    salaryPeriod: asPeriod(raw.salaryPeriod),
     _raw: raw,
     _model: model,
     _usage: { inputTokens, outputTokens, estimatedUsd },

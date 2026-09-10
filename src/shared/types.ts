@@ -199,6 +199,8 @@ export interface Application {
   salaryMin: number | null
   salaryMax: number | null
   salaryPeriod: SalaryPeriod | null
+  /** the employer's requisition / posting number, e.g. "REQ-20481" or "R-2024-5567" */
+  jobPostingId: string | null
   jdText: string
 
   // user-set
@@ -300,6 +302,7 @@ export interface ScrapedJob {
   salaryMin: number | null
   salaryMax: number | null
   salaryPeriod: SalaryPeriod | null
+  jobPostingId: string | null
   jdText: string
   /** true when the scrape produced too little to trust — UI shows a manual-paste box */
   needsManualPaste: boolean
@@ -316,6 +319,14 @@ export interface ExtractionResult {
   industryKeywords: string[]
   companyInsights: string[]
   tailoringTips: string[]
+  /** hard facts pulled from the JD body — null whenever genuinely not stated */
+  location: string | null
+  datePosted: string | null // 'YYYY-MM-DD'
+  jobPostingId: string | null
+  salaryRaw: string | null // pay text exactly as written in the JD
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryPeriod: SalaryPeriod | null
   _raw: unknown
   _model: ExtractionModel
   _usage: { inputTokens: number; outputTokens: number; estimatedUsd: number }
@@ -335,6 +346,7 @@ export interface NewApplicationInput {
   salaryMin?: number | null
   salaryMax?: number | null
   salaryPeriod?: SalaryPeriod | null
+  jobPostingId?: string | null
   jdText: string
   dateApplied: string
   status: ApplicationStatus

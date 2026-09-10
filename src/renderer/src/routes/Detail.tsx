@@ -239,6 +239,7 @@ export function Detail() {
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px] font-semibold text-muted">
               <span>{app.company}</span>
               {app.location && <span>· {app.location}</span>}
+              {app.jobPostingId && <span>· ID {app.jobPostingId}</span>}
               <span>
                 ·{' '}
                 {app.status === 'not-applied'
@@ -566,6 +567,16 @@ function DetailsForm({
       </Field>
       <Field label="Date applied">
         <DateField value={app.dateApplied || null} onChange={(v) => onPatch({ dateApplied: v ?? '' })} />
+      </Field>
+      <Field label="Job posting ID">
+        <Input
+          key={`jpid${app.id}`}
+          defaultValue={app.jobPostingId ?? ''}
+          placeholder="req / posting number"
+          onBlur={(e) =>
+            commit(e.target.value, app.jobPostingId ?? '', (v) => onPatch({ jobPostingId: v || null }))
+          }
+        />
       </Field>
       <div className="sm:col-span-2">
         <Field label="Tags">
