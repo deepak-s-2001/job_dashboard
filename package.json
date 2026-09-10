@@ -22,6 +22,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.5.5",
+    "country-state-city": "^3.2.1",
     "electron": "^33.4.11",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",

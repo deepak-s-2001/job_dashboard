@@ -41,11 +41,23 @@ export function ComboBox({
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null)
 
   const matches = useMemo(() => {
-    const q = value.trim().toLowerCase()
-    const list = q
-      ? options.filter((o) => o.toLowerCase().includes(q))
-      : options
-    return list.slice(0, 50)
+    const raw = value.trim().toLowerCase()
+    if (raw.length < 2) return options.slice(0, 8)
+    const LIMIT = 50
+    const tokens = raw.split(/[\s,]+/).filter(Boolean)
+    const starts: string[] = []
+    const contains: string[] = []
+    for (const o of options) {
+      const lo = o.toLowerCase()
+      if (!tokens.every((t) => lo.includes(t))) continue
+      if (lo.startsWith(tokens[0])) {
+        if (starts.length < LIMIT) starts.push(o)
+      } else if (contains.length < LIMIT) {
+        contains.push(o)
+      }
+      if (starts.length >= LIMIT) break
+    }
+    return [...starts, ...contains].slice(0, LIMIT)
   }, [value, options])
 
   const place = useCallback(() => {
