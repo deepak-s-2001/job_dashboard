@@ -14,7 +14,9 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test": "vitest run",
     "dist": "electron-vite build && electron-builder --win --config electron-builder.yml",
-    "dist:dir": "electron-vite build && electron-builder --win --dir --config electron-builder.yml"
+    "dist:dir": "electron-vite build && electron-builder --win --dir --config electron-builder.yml",
+    "reinstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/reinstall.ps1",
+    "gen:locations": "node scripts/gen-locations.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
