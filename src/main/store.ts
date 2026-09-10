@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import type {
   Application,
   Contact,
@@ -212,8 +212,11 @@ export function listBackups(): BackupInfo[] {
 }
 
 export async function restoreBackup(name: string): Promise<number> {
-  if (!BACKUP_RE.test(name)) throw new Error('Bad backup name.')
-  const src = join(backupsDir(), name)
+  // strip any path segments before validating — a name like 'db-2024-01-01/../../x.json'
+  // would otherwise still match BACKUP_RE and escape backupsDir() via '..'
+  const safe = basename(name)
+  if (!BACKUP_RE.test(safe)) throw new Error('Bad backup name.')
+  const src = join(backupsDir(), safe)
   if (!existsSync(src)) throw new Error('That backup is gone.')
   // snapshot the current state (distinct-content dedup) so the restore is reversible
   await db.flushNow()

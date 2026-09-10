@@ -57,12 +57,24 @@ function collapse(text: string): string {
     .trim()
 }
 
+// This window loads arbitrary, untrusted third-party job-posting pages (whatever
+// URL the user pastes). No preload is attached — the loaded page has no `window.api`
+// bridge — and these are pinned explicitly rather than left to Electron's defaults,
+// since a compromised job-site page is the least-trusted content this app touches.
+const UNTRUSTED_WEB_PREFS = {
+  sandbox: true,
+  contextIsolation: true,
+  nodeIntegration: false,
+  webviewTag: false,
+} as const
+
 export async function renderPage(url: string, timeoutMs = 25_000): Promise<RenderedPage> {
   const win = new BrowserWindow({
     show: false,
     width: 1280,
     height: 900,
     webPreferences: {
+      ...UNTRUSTED_WEB_PREFS,
       partition: SCRAPER_PARTITION,
       images: false,
       javascript: true,
@@ -131,7 +143,7 @@ export function openLoginWindow(url: string): void {
     width: 980,
     height: 820,
     title: 'Log in — the session is remembered for scraping',
-    webPreferences: { partition: SCRAPER_PARTITION },
+    webPreferences: { ...UNTRUSTED_WEB_PREFS, partition: SCRAPER_PARTITION },
   })
   win.webContents.setUserAgent(USER_AGENT)
   void win.loadURL(url)
