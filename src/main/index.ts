@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, MenuItem, shell } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, MenuItem, shell } from 'electron'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { initStore, shutdownStore } from './store'
@@ -194,6 +194,20 @@ function focused(): BrowserWindow | null {
   return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null
 }
 
+/** Global-hotkey handler: bring the app to the front, straight to Add. */
+function jumpToAdd(): void {
+  let win = BrowserWindow.getAllWindows()[0]
+  if (!win) {
+    createWindow()
+    win = BrowserWindow.getAllWindows()[0]
+  }
+  if (!win) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+  void win.webContents.executeJavaScript("location.hash = '#add'")
+}
+
 function registerWindowIpc(): void {
   ipcMain.handle('win:minimize', () => focused()?.minimize())
   ipcMain.handle('win:toggleMaximize', () => {
@@ -238,6 +252,12 @@ app.whenReady().then(async () => {
 
   createWindow()
 
+  // Fast single-add: jump straight to Add from anywhere, even if the window
+  // is minimized or behind other apps. One fixed accelerator for now — no
+  // rebinding UI yet.
+  const registered = globalShortcut.register('CommandOrControl+Shift+J', jumpToAdd)
+  if (!registered) console.error('[hotkey] Ctrl/Cmd+Shift+J is already taken by another app')
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -252,6 +272,7 @@ app.on('before-quit', (e) => {
   if (quitting) return
   quitting = true
   e.preventDefault()
+  globalShortcut.unregisterAll()
   stopLocalServer()
   void shutdownStore()
     .catch(() => {})
