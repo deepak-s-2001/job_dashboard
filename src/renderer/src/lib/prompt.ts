@@ -114,9 +114,9 @@ Do these three things, in this order:
 - Where my experience genuinely matches, mirror the job's own wording rather than my paraphrase (for example, use their "design controls" instead of my "regulated development process"). Where it does not match, do not adopt their wording.
 - Keep every suggestion ATS-plain: standard section headings, single column (no tables / columns / graphics / icons / text boxes inside the resume itself), contact info in the body and never in a header or footer, one clear phrasing per bullet, active voice, real numbers where I have them.
 - Preserve my voice and every truthful accomplishment I keep — reword and reorder what stays, never water it down. That is separate from deciding what stays: cutting a bullet or skill that has earned no place on a one-page, JD-targeted resume is not watering anything down, it's editing.
-- Target one page, total. If my pasted resume runs longer, cut and condense before you polish: drop bullets that map to nothing in this job's <full_text> and carry no strong general signal either, and condense or single-line roles that are old or only weakly relevant. Never shrink font or margins to cheat the limit instead of cutting content.
-- Bullet caps on the tailored version, per role: 3 is the default for a real role. Go to 4 — occasionally 5 — only for my single most recent or most relevant role, and only if every extra bullet is a genuinely distinct result; never pad to reach a cap. An internship or a stint under ~6 months gets 1–2 bullets. A role that can't support at least one real bullet becomes a single line: title, company, dates.
-- Skills section: cut, don't just reorder. Remove anything this job's <full_text> gives no hint of wanting — not directly, not as a synonym, not as a closely adjacent/transferable skill. A resume that lists everything I've ever touched reads as unfocused and buries the keywords that actually matter for this job. This is separate from the <required_skills>/<preferred_skills>/<ats_keywords> coverage rule above, which is about what the JD asks for that I should add or evidence — this one is about what my own resume already lists that this JD gives me no reason to keep.
+- Target one page, total. If my pasted resume runs longer, rank before you cut — never remove anything without first weighing it against what else is competing for that slot. Roles that are old or only weakly relevant to this job get condensed or single-lined first, ahead of trimming a relevant role's bullets. Never shrink font or margins to cheat the limit instead of cutting content.
+- Bullet caps on the tailored version, per role: first rank that role's bullets — a bullet with a real, specific number or result outranks one without; direct relevance to this job's <full_text> outranks generic phrasing — then keep the top-ranked ones up to the cap, in ranked order. Default cap is 3 for a real role; go to 4, occasionally 5, only for my single most recent or most relevant role. An internship or a stint under ~6 months gets 1–2. Never pad to reach a cap, and never let a bullet carrying a genuine metric get cut to make room for a vaguer one that survives only because of where it sits in the resume. A role that has nothing worth ranking becomes a single line: title, company, dates.
+- Skills section: rank before you cut. Keep everything this job's <full_text> asks for directly or via a close synonym; keep, after that, anything closely adjacent/transferable to something it asks for; only what's left with no real connection to this job gets cut. Don't remove a skill just to shorten the list if it's genuinely relevant — the goal is relevance, not brevity for its own sake. This is separate from the <required_skills>/<preferred_skills>/<ats_keywords> coverage rule above, which is about what the JD asks for that I should add or evidence — this one is about what my own resume already lists that this JD gives me no reason to keep.
 - Headline: propose one in the literal format "Primary Title | Theme | Theme" — 2 to 3 pipe-separated segments, built fresh from this job's own title plus its top keyword or two (e.g. for a cloud-facing AI role: "AI Engineer | Cloud Deployments | Embedded Systems"). Lead with the job's own title or the closest truthful equivalent — resumes that echo the exact title back get noticed measurably more often — then add only themes I can actually back up.
 - If the resume I paste is incomplete, truncated, or ambiguous, tell me what is missing and ask — do not guess to fill the hole. You are allowed to say "I can't assess this from what you gave me."
 </rules>
@@ -149,9 +149,11 @@ A markdown table with one row for every entry in <required_skills>, <preferred_s
 
 Priority = required / preferred / keyword. Action = keep as-is / reword bullet / add evidence to bullet / real gap.
 
-Then, separately: **Skills to cut** — anything currently in my Skills section that this job gives no reason to keep (see the Skills-section rule above).
+Then, separately: **Skills to cut** — anything currently in my Skills section that this job gives no reason to keep, each with a one-line reason (see the Skills-section rule above).
 
 ## 4. Line-by-line changes
+For any role at or over its bullet cap: show the ranked list you used to decide (highest first), then name which bullet(s) you cut and why they ranked below the cap. If a cut bullet contained a specific number or result, say so explicitly and confirm what still-kept bullet outranked it and why — I want to be able to catch it if a strong metric got cut.
+
 For each bullet you would change:
 
 > **[Section] — [role / project]**
@@ -170,5 +172,6 @@ Tick each, or explain why not:
 - [ ] every item in the tailored Skills section has a backing bullet, and nothing irrelevant survived the cut
 - [ ] the job's key phrases are mirrored everywhere my experience truthfully supports them
 - [ ] the tailored resume fits one page, with no role over its bullet cap and nothing padded to reach one
+- [ ] every bullet or skill you cut was ranked against what it was competing with, and no cut bullet outranked a kept one on metrics or relevance
 </output_format>`
 }
