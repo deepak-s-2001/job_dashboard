@@ -108,14 +108,71 @@ export interface Contact {
 
 export type NewContactInput = Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>
 
+export interface EducationEntry {
+  school: string
+  degree: string
+  field: string
+  gradYear: string | null
+}
+
 export interface UserProfile {
   name: string
   email: string
   phone: string
   linkedinUrl: string
+  addressLine1: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+  githubUrl: string
+  portfolioUrl: string
+  /** free text, the user's own words — e.g. "US Citizen", "Requires H-1B sponsorship" */
+  workAuthorization: string | null
+  /** tri-state: null = not answered yet, never guessed */
+  requiresSponsorship: boolean | null
+  education: EducationEntry[]
+  /** voluntary self-ID, one global answer reused everywhere — never guessed if unset */
+  eeoGender: string | null
+  eeoRace: string | null
+  eeoVeteranStatus: string | null
+  eeoDisabilityStatus: string | null
 }
 
-export const EMPTY_PROFILE: UserProfile = { name: '', email: '', phone: '', linkedinUrl: '' }
+export const EMPTY_PROFILE: UserProfile = {
+  name: '',
+  email: '',
+  phone: '',
+  linkedinUrl: '',
+  addressLine1: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: '',
+  githubUrl: '',
+  portfolioUrl: '',
+  workAuthorization: null,
+  requiresSponsorship: null,
+  education: [],
+  eeoGender: null,
+  eeoRace: null,
+  eeoVeteranStatus: null,
+  eeoDisabilityStatus: null,
+}
+
+export interface TailoredExperienceEntry {
+  company: string
+  roleTitle: string
+  bullets: string[]
+}
+
+/** structured content parsed from one attached resume PDF, for browser-extension autofill */
+export interface TailoredResume {
+  headline: string
+  summary: string | null
+  skills: string[]
+  experience: TailoredExperienceEntry[]
+}
 
 export interface Resume {
   id: string
@@ -124,6 +181,10 @@ export interface Resume {
   hash: string
   isPrimary: boolean
   addedAt: string
+  /** populated by "Parse for autofill"; null until the user runs it */
+  parsed: TailoredResume | null
+  parsedAt: string | null
+  parseModel: ExtractionModel | null
 }
 
 export interface ApplicationSkills {
@@ -275,6 +336,8 @@ export interface Settings {
   extractionModel: ExtractionModel
   hasApiKey: boolean
   profile: UserProfile
+  /** the browser extension's local-API pairing info — null until the server has started once */
+  extension: { port: number; token: string } | null
 }
 
 export interface DBShape {
@@ -284,7 +347,12 @@ export interface DBShape {
   todos: Todo[]
   tags: TagDef[]
   usage: UsageTotals
-  settings: { extractionModel: ExtractionModel; profile: UserProfile }
+  settings: {
+    extractionModel: ExtractionModel
+    profile: UserProfile
+    /** persisted so re-pairing the extension isn't needed after every restart */
+    extensionToken: string | null
+  }
 }
 
 // ---------- Scrape / extraction wire types ----------

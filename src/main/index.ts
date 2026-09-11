@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { initStore, shutdownStore } from './store'
 import { registerIpc } from './ipc'
 import { scrapeUrl } from './scraper'
+import { startLocalServer, stopLocalServer } from './localServer'
 
 const isDev = !app.isPackaged
 
@@ -210,6 +211,13 @@ app.whenReady().then(async () => {
   registerIpc()
   registerWindowIpc()
   buildMenu()
+  try {
+    await startLocalServer()
+  } catch (err) {
+    // non-fatal — the app works fine without the browser extension; a busy
+    // port just means autofill won't be reachable until it's freed
+    console.error('[localServer] failed to start:', err)
+  }
 
   if (SMOKE_SCRAPE) {
     try {
@@ -244,6 +252,7 @@ app.on('before-quit', (e) => {
   if (quitting) return
   quitting = true
   e.preventDefault()
+  stopLocalServer()
   void shutdownStore()
     .catch(() => {})
     .finally(() => app.exit(0))

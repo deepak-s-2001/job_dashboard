@@ -13,6 +13,7 @@ import type {
   ScrapedJob,
   Settings,
   TagDef,
+  TailoredResume,
   Todo,
   UsageTotals,
   UserProfile,
@@ -56,6 +57,14 @@ const api = {
       invoke<{ data: Uint8Array; filename: string }>(IPC.resumeReadData, appId, resumeId),
     openExternal: (appId: string, resumeId: string) =>
       invoke<boolean>(IPC.resumeOpenExternal, appId, resumeId),
+    parseForAutofill: (appId: string, resumeId: string) =>
+      invoke<TailoredResume & { _model: ExtractionModel }>(
+        IPC.resumeParseForAutofill,
+        appId,
+        resumeId,
+      ),
+    saveParsed: (appId: string, resumeId: string, parsed: TailoredResume, model: ExtractionModel) =>
+      invoke<boolean>(IPC.resumeSaveParsed, appId, resumeId, parsed, model),
   },
   tags: {
     list: () => invoke<TagDef[]>(IPC.tagsList),

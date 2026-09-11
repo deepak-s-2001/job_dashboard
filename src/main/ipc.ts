@@ -11,6 +11,7 @@ import type {
   NewContactInput,
   NewTodoInput,
   TagDef,
+  TailoredResume,
   Todo,
   UserProfile,
 } from '@shared/types'
@@ -40,12 +41,16 @@ import {
   getModel,
   setModel,
   getUsage,
+  getOrCreateExtensionToken,
   dataDir,
   listBackups,
   restoreBackup,
 } from './store'
+import { localServerPort } from './localServer'
 import { getApiKey, setApiKey, hasApiKey, clearApiKey } from './secrets'
 import { extractJd, testApiKey, ExtractionError } from './extract'
+import { parseTailoredResume, TailoredResumeError } from './tailoredResume'
+import { extractPdfText } from './pdfText'
 import { scrapeUrl, scrapeFromText, openLoginWindow } from './scraper'
 import {
   attachResume,
@@ -54,6 +59,8 @@ import {
   readResumeData,
   openResumeExternal,
   deleteAppResumes,
+  getResumeRecord,
+  saveParsedResume,
 } from './files'
 
 function ok<T>(data: T): ApiResult<T> {
@@ -176,6 +183,24 @@ export function registerIpc(): void {
     return r.ok ? ok(true) : fail(r.error ?? 'Could not open the file.')
   })
 
+  ipcMain.handle(IPC.resumeParseForAutofill, (_e, appId: string, resumeId: string) =>
+    guard(async () => {
+      if (!hasApiKey()) {
+        throw new TailoredResumeError('Add your Anthropic API key in Settings first.')
+      }
+      const rec = getResumeRecord(appId, resumeId)
+      if (!rec.ok || !rec.resume) throw new TailoredResumeError(rec.error ?? 'Resume not found.')
+      const text = await extractPdfText(rec.resume.storedPath)
+      return await parseTailoredResume(text)
+    }),
+  )
+
+  ipcMain.handle(
+    IPC.resumeSaveParsed,
+    (_e, appId: string, resumeId: string, parsed: TailoredResume, model: ExtractionModel) =>
+      guard(() => saveParsedResume(appId, resumeId, parsed, model)),
+  )
+
   // ---------- tags ----------
   ipcMain.handle(IPC.tagsList, () => ok(listTags()))
   ipcMain.handle(IPC.tagsUpsert, (_e, tag: TagDef) => guard(() => upsertTag(tag)))
@@ -212,8 +237,13 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.todoDelete, (_e, id: string) => guard(() => deleteTodo(id).then(() => true)))
 
   // ---------- settings / secrets / misc ----------
-  ipcMain.handle(IPC.settingsGet, () =>
-    ok({ extractionModel: getModel(), hasApiKey: hasApiKey(), profile: getProfile() }),
+  ipcMain.handle(IPC.settingsGet, async () =>
+    ok({
+      extractionModel: getModel(),
+      hasApiKey: hasApiKey(),
+      profile: getProfile(),
+      extension: { port: localServerPort(), token: await getOrCreateExtensionToken() },
+    }),
   )
   ipcMain.handle(IPC.settingsSetModel, (_e, model: ExtractionModel) =>
     guard(() => setModel(model)),

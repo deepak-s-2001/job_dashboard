@@ -2,7 +2,7 @@ import { shell } from 'electron'
 import { createHash } from 'node:crypto'
 import { copyFileSync, mkdirSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
-import type { Resume } from '@shared/types'
+import type { ExtractionModel, Resume, TailoredResume } from '@shared/types'
 import { resumesDir, mutateApplication, persist } from './store'
 import { genId } from './jsondb'
 
@@ -49,6 +49,9 @@ export async function attachResume(
     hash,
     isPrimary: app_.resumes.length === 0,
     addedAt: new Date().toISOString(),
+    parsed: null,
+    parsedAt: null,
+    parseModel: null,
   }
   app_.resumes.push(resume)
   app_.updatedAt = new Date().toISOString()
@@ -119,6 +122,37 @@ export async function openResumeExternal(
   if (!resume) return { ok: false, error: 'Resume not found.' }
   const err = await shell.openPath(resume.storedPath)
   return err ? { ok: false, error: err } : { ok: true }
+}
+
+export function getResumeRecord(
+  appId: string,
+  resumeId: string,
+): { ok: boolean; error?: string; resume?: Resume } {
+  const app_ = mutateApplication(appId)
+  const resume = app_?.resumes.find((r) => r.id === resumeId)
+  if (!resume) return { ok: false, error: 'Resume not found.' }
+  if (!existsSync(resume.storedPath)) {
+    return { ok: false, error: 'The stored PDF is missing from disk.' }
+  }
+  return { ok: true, resume }
+}
+
+export async function saveParsedResume(
+  appId: string,
+  resumeId: string,
+  parsed: TailoredResume,
+  model: ExtractionModel,
+): Promise<{ ok: boolean; error?: string }> {
+  const app_ = mutateApplication(appId)
+  if (!app_) return { ok: false, error: 'Application not found.' }
+  const resume = app_.resumes.find((r) => r.id === resumeId)
+  if (!resume) return { ok: false, error: 'Resume not found.' }
+  resume.parsed = parsed
+  resume.parsedAt = new Date().toISOString()
+  resume.parseModel = model
+  app_.updatedAt = new Date().toISOString()
+  await persist()
+  return { ok: true }
 }
 
 export function deleteAppResumes(appId: string): void {

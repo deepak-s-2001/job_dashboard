@@ -56,6 +56,7 @@ const DEFAULT_SETTINGS: Settings = {
   extractionModel: 'claude-haiku-4-5',
   hasApiKey: false,
   profile: EMPTY_PROFILE,
+  extension: null,
 }
 const DEFAULT_USAGE: UsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
 

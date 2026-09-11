@@ -20,6 +20,8 @@ export const IPC = {
   resumeSetPrimary: 'resume:setPrimary',
   resumeReadData: 'resume:readData',
   resumeOpenExternal: 'resume:openExternal',
+  resumeParseForAutofill: 'resume:parseForAutofill',
+  resumeSaveParsed: 'resume:saveParsed',
 
   // tags
   tagsList: 'tags:list',

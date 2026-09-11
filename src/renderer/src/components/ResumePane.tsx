@@ -1,8 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import type { Application } from '@shared/types'
+import type { Application, ExtractionModel, TailoredResume } from '@shared/types'
 import { api, call } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/Confirm'
+import { Button } from './ui/Button'
+import { Input, Textarea } from './ui/Field'
 import { IconButton, Spinner } from './ui/misc'
 
 const PdfViewer = lazy(() =>
@@ -10,6 +12,8 @@ const PdfViewer = lazy(() =>
 )
 import { cn } from '@/lib/cn'
 import { fmtDate } from '@/lib/format'
+
+type ParsedDraft = TailoredResume & { _model: ExtractionModel }
 
 export function ResumePane({
   app,
@@ -30,6 +34,9 @@ export function ResumePane({
   const [loadingPdf, setLoadingPdf] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [parsing, setParsing] = useState(false)
+  const [draft, setDraft] = useState<ParsedDraft | null>(null)
+  const [saving, setSaving] = useState(false)
 
   // keep a valid selection as resumes change
   useEffect(() => {
@@ -126,6 +133,34 @@ export function ResumePane({
     await onChanged()
   }
 
+  async function parseForAutofill(id: string) {
+    setParsing(true)
+    try {
+      const result = await call(api.resumes.parseForAutofill(app.id, id))
+      setDraft(result)
+    } catch (e) {
+      toast.push('error', e instanceof Error ? e.message : 'Could not parse the PDF.')
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  async function saveDraft(id: string) {
+    if (!draft) return
+    setSaving(true)
+    try {
+      const { _model, ...parsed } = draft
+      await call(api.resumes.saveParsed(app.id, id, parsed, _model))
+      await onChanged()
+      setDraft(null)
+      toast.push('success', 'Saved — the extension will use this for text fields.')
+    } catch (e) {
+      toast.push('error', e instanceof Error ? e.message : 'Could not save.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const current = app.resumes.find((r) => r.id === selected)
 
   return (
@@ -186,6 +221,14 @@ export function ResumePane({
 
         {current && (
           <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => void parseForAutofill(current.id)}
+              disabled={parsing || !!draft}
+              title="Extract this PDF's content for the browser-extension autofill"
+              className="nb-focus flex items-center gap-1 border-2 border-ink px-2 py-0.5 text-[12px] font-bold hover:bg-accent-lime disabled:opacity-50"
+            >
+              {parsing ? <Spinner className="h-3 w-3" /> : current.parsed ? '✓ Parsed' : '✦ Parse for autofill'}
+            </button>
             {!current.isPrimary && app.resumes.length > 1 && (
               <IconButton title="Make primary" onClick={() => makePrimary(current.id)}>
                 ★
@@ -205,7 +248,15 @@ export function ResumePane({
       </div>
 
       <div className="relative min-h-0 flex-1">
-        {app.resumes.length === 0 ? (
+        {draft && current ? (
+          <ParsedResumeReview
+            draft={draft}
+            onChange={setDraft}
+            onCancel={() => setDraft(null)}
+            onSave={() => void saveDraft(current.id)}
+            saving={saving}
+          />
+        ) : app.resumes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center border-3 border-dashed border-ink rounded text-3xl">
               📄
@@ -239,6 +290,141 @@ export function ResumePane({
             Drop to attach
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Editable review of what "Parse for autofill" pulled from the PDF. PDF text
+ * extraction can scramble order in a multi-column resume, so nothing here is
+ * ever trusted silently — the user can fix any field before Save writes it
+ * to the resume record the browser extension will later read.
+ */
+function ParsedResumeReview({
+  draft,
+  onChange,
+  onCancel,
+  onSave,
+  saving,
+}: {
+  draft: ParsedDraft
+  onChange: (d: ParsedDraft) => void
+  onCancel: () => void
+  onSave: () => void
+  saving: boolean
+}) {
+  function patchExperience(i: number, patch: Partial<ParsedDraft['experience'][number]>) {
+    onChange({
+      ...draft,
+      experience: draft.experience.map((e, idx) => (idx === i ? { ...e, ...patch } : e)),
+    })
+  }
+  function removeExperience(i: number) {
+    onChange({ ...draft, experience: draft.experience.filter((_, idx) => idx !== i) })
+  }
+
+  return (
+    <div className="nb-scroll h-full overflow-y-auto bg-ground p-3">
+      <p className="mb-3 text-[13px] text-muted">
+        Extracted from the PDF — check it over, especially if this resume has columns or a
+        sidebar (that can scramble reading order). Nothing is saved until you click Save.
+      </p>
+
+      <label className="block text-[12px] font-bold uppercase tracking-wide text-muted">
+        Headline
+      </label>
+      <Input
+        className="mt-1"
+        value={draft.headline}
+        onChange={(e) => onChange({ ...draft, headline: e.target.value })}
+        placeholder="Primary Title | Theme | Theme"
+      />
+
+      <label className="mt-3 block text-[12px] font-bold uppercase tracking-wide text-muted">
+        Summary
+      </label>
+      <Textarea
+        className="mt-1"
+        rows={2}
+        value={draft.summary ?? ''}
+        onChange={(e) => onChange({ ...draft, summary: e.target.value || null })}
+        placeholder="(none)"
+      />
+
+      <label className="mt-3 block text-[12px] font-bold uppercase tracking-wide text-muted">
+        Skills — comma separated
+      </label>
+      <Textarea
+        className="mt-1"
+        rows={2}
+        value={draft.skills.join(', ')}
+        onChange={(e) =>
+          onChange({
+            ...draft,
+            skills: e.target.value
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean),
+          })
+        }
+      />
+
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-[12px] font-bold uppercase tracking-wide text-muted">
+          Experience
+        </span>
+      </div>
+      <div className="mt-1 space-y-2">
+        {draft.experience.map((e, i) => (
+          <div key={i} className="border-2 border-ink bg-surface p-2">
+            <div className="flex gap-1.5">
+              <Input
+                className="flex-1"
+                value={e.company}
+                onChange={(ev) => patchExperience(i, { company: ev.target.value })}
+                placeholder="Company"
+              />
+              <Input
+                className="flex-1"
+                value={e.roleTitle}
+                onChange={(ev) => patchExperience(i, { roleTitle: ev.target.value })}
+                placeholder="Role title"
+              />
+              <button
+                type="button"
+                aria-label="Remove role"
+                onClick={() => removeExperience(i)}
+                className="nb-focus px-1 text-muted hover:text-accent-coral"
+              >
+                ×
+              </button>
+            </div>
+            <Textarea
+              className="mt-1.5"
+              rows={Math.max(2, e.bullets.length)}
+              value={e.bullets.join('\n')}
+              onChange={(ev) =>
+                patchExperience(i, {
+                  bullets: ev.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
+                })
+              }
+              placeholder="One bullet per line"
+            />
+          </div>
+        ))}
+        {draft.experience.length === 0 && (
+          <p className="text-[13px] text-muted">No roles were found in the extracted text.</p>
+        )}
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button variant="primary" onClick={onSave} disabled={saving}>
+          {saving ? <Spinner className="border-ground border-t-transparent" /> : 'Save'}
+        </Button>
+        <Button variant="outline" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
       </div>
     </div>
   )

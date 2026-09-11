@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { ExtractionModel, ExtractionResult } from '@shared/types'
 import { getApiKey } from './secrets'
 import { getModel, addUsage } from './store'
+import { asStringArray, asStrOrNull, asNumOrNull } from './aiHelpers'
 
 /** USD per 1M tokens, [input, output]. */
 const PRICING: Record<ExtractionModel, [number, number]> = {
@@ -72,23 +73,6 @@ const TOOL_SCHEMA = {
 }
 
 export class ExtractionError extends Error {}
-
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return []
-  return v.map((x) => String(x).trim()).filter(Boolean)
-}
-
-function asStrOrNull(v: unknown): string | null {
-  if (v === null || v === undefined) return null
-  const s = String(v).trim()
-  return s ? s : null
-}
-
-function asNumOrNull(v: unknown): number | null {
-  if (v === null || v === undefined || v === '') return null
-  const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.]/g, ''))
-  return Number.isFinite(n) && n > 0 ? n : null
-}
 
 function asPeriod(v: unknown): 'year' | 'hour' | null {
   return v === 'year' || v === 'hour' ? v : null

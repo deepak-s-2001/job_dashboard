@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { randomBytes } from 'node:crypto'
 import {
   existsSync,
   mkdirSync,
@@ -37,7 +38,11 @@ const defaultData: DBShape = {
   todos: [],
   tags: [],
   usage: { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 },
-  settings: { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } },
+  settings: {
+    extractionModel: 'claude-haiku-4-5',
+    profile: { ...EMPTY_PROFILE },
+    extensionToken: null,
+  },
 }
 
 export function dataDir(): string {
@@ -141,6 +146,11 @@ function migrateApplication(a: Application): void {
   a.salaryMax ??= null
   a.salaryPeriod ??= null
   a.jobPostingId ??= null
+  for (const r of a.resumes) {
+    r.parsed ??= null
+    r.parsedAt ??= null
+    r.parseModel ??= null
+  }
   if (!a.statusHistory || a.statusHistory.length === 0) {
     a.statusHistory = [
       { status: a.status, at: a.dateApplied ? `${a.dateApplied}T12:00:00.000Z` : a.createdAt },
@@ -158,8 +168,13 @@ export async function initStore(): Promise<void> {
   db.data.todos ??= []
   db.data.tags ??= []
   db.data.usage ??= { calls: 0, inputTokens: 0, outputTokens: 0, estimatedUsd: 0 }
-  db.data.settings ??= { extractionModel: 'claude-haiku-4-5', profile: { ...EMPTY_PROFILE } }
+  db.data.settings ??= {
+    extractionModel: 'claude-haiku-4-5',
+    profile: { ...EMPTY_PROFILE },
+    extensionToken: null,
+  }
   db.data.settings.profile ??= { ...EMPTY_PROFILE }
+  db.data.settings.extensionToken ??= null
   db.data.applications.forEach(migrateApplication)
   await db.flushNow()
 }
@@ -230,6 +245,7 @@ export async function restoreBackup(name: string): Promise<number> {
   db.data.usage = restored.usage ?? db.data.usage
   db.data.settings = restored.settings ?? db.data.settings
   db.data.settings.profile ??= { ...EMPTY_PROFILE }
+  db.data.settings.extensionToken ??= null
   db.data.applications.forEach(migrateApplication)
   await db.flushNow()
   return db.data.applications.length
@@ -273,6 +289,70 @@ export function findApplicationByUrl(url: string): Application | undefined {
   const key = normalizeUrl(url)
   if (!key) return undefined
   return db.data.applications.find((a) => a.url && normalizeUrl(a.url) === key)
+}
+
+/**
+ * Same ATS + same job id as the saved posting, even though the current URL is a
+ * different sub-page (an /apply page, a query-string variant, etc). Mirrors the
+ * id-extraction regexes already used by the matching scraper adapter — kept as a
+ * separate, smaller regex here rather than importing the adapters (those pull in
+ * the whole scraper module, including render.ts's BrowserWindow-based fetching,
+ * which this lightweight lookup has no business depending on).
+ */
+function extractAtsId(rawUrl: string): { site: string; key: string } | null {
+  let u: URL
+  try {
+    u = new URL(rawUrl)
+  } catch {
+    return null
+  }
+  if (/(^|\.)greenhouse\.io$/.test(u.hostname)) {
+    const m = u.pathname.match(/\/([^/]+)\/jobs\/(\d+)/)
+    if (m) return { site: 'greenhouse', key: `${m[1]}/${m[2]}`.toLowerCase() }
+  }
+  if (/(^|\.)lever\.co$/.test(u.hostname)) {
+    const m = u.pathname.match(/^\/([^/]+)\/([0-9a-f-]{16,})/i)
+    if (m) return { site: 'lever', key: `${m[1]}/${m[2]}`.toLowerCase() }
+  }
+  if (/(^|\.)ashbyhq\.com$/.test(u.hostname)) {
+    const m = u.pathname.match(/^\/([^/]+)\/([0-9a-f-]{20,})/i)
+    if (m) return { site: 'ashby', key: `${m[1]}/${m[2]}`.toLowerCase() }
+  }
+  if (/\.myworkdayjobs\.com$/.test(u.hostname)) {
+    const segs = u.pathname.split('/').filter(Boolean)
+    const jobIdx = segs.indexOf('job')
+    const last = segs.at(-1)
+    const idMatch = jobIdx >= 1 && last ? /_([A-Za-z0-9-]+)$/.exec(last) : null
+    if (idMatch) return { site: 'workday', key: `${u.hostname}/${idMatch[1]}`.toLowerCase() }
+  }
+  return null
+}
+
+export type ApplicationMatch =
+  | { status: 'match'; application: Application }
+  | { status: 'ambiguous'; candidates: Application[] }
+  | { status: 'none' }
+
+/** Used by the browser extension's /lookup endpoint. Never guesses silently. */
+export function matchApplicationForUrl(rawUrl: string): ApplicationMatch {
+  const exact = findApplicationByUrl(rawUrl)
+  if (exact) return { status: 'match', application: exact }
+
+  const id = extractAtsId(rawUrl)
+  if (id) {
+    const hit = db.data.applications.find((a) => {
+      if (a.archivedAt) return false
+      const aid = extractAtsId(a.url)
+      return !!aid && aid.site === id.site && aid.key === id.key
+    })
+    if (hit) return { status: 'match', application: hit }
+  }
+
+  const candidates = [...db.data.applications]
+    .filter((a) => !a.archivedAt)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 5)
+  return candidates.length ? { status: 'ambiguous', candidates } : { status: 'none' }
 }
 
 function seedStatusAt(dateApplied: string, ts: string): string {
@@ -665,6 +745,27 @@ export async function setProfile(p: UserProfile): Promise<void> {
     email: (p.email ?? '').trim(),
     phone: (p.phone ?? '').trim(),
     linkedinUrl: (p.linkedinUrl ?? '').trim(),
+    addressLine1: (p.addressLine1 ?? '').trim(),
+    city: (p.city ?? '').trim(),
+    state: (p.state ?? '').trim(),
+    postalCode: (p.postalCode ?? '').trim(),
+    country: (p.country ?? '').trim(),
+    githubUrl: (p.githubUrl ?? '').trim(),
+    portfolioUrl: (p.portfolioUrl ?? '').trim(),
+    workAuthorization: p.workAuthorization?.trim() || null,
+    requiresSponsorship: p.requiresSponsorship === true || p.requiresSponsorship === false
+      ? p.requiresSponsorship
+      : null,
+    education: (Array.isArray(p.education) ? p.education : []).map((e) => ({
+      school: (e.school ?? '').trim(),
+      degree: (e.degree ?? '').trim(),
+      field: (e.field ?? '').trim(),
+      gradYear: e.gradYear?.trim() || null,
+    })),
+    eeoGender: p.eeoGender?.trim() || null,
+    eeoRace: p.eeoRace?.trim() || null,
+    eeoVeteranStatus: p.eeoVeteranStatus?.trim() || null,
+    eeoDisabilityStatus: p.eeoDisabilityStatus?.trim() || null,
   }
   await db.write()
 }
@@ -680,6 +781,15 @@ export async function setModel(model: ExtractionModel): Promise<void> {
 
 export function getUsage(): UsageTotals {
   return { ...db.data.usage }
+}
+
+/** Generated once, persisted, shown in Settings so the browser extension can be paired to it. */
+export async function getOrCreateExtensionToken(): Promise<string> {
+  if (!db.data.settings.extensionToken) {
+    db.data.settings.extensionToken = randomBytes(24).toString('hex')
+    await db.write()
+  }
+  return db.data.settings.extensionToken
 }
 
 export async function addUsage(inputTokens: number, outputTokens: number, usd: number): Promise<void> {
