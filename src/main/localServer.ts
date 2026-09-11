@@ -16,14 +16,17 @@ import {
  * listening socket at all." Hardened: 127.0.0.1 only, a pairing token
  * required on every request, a light rate limit.
  *
- * Origin is checked only loosely (must be *some* `chrome-extension://`
- * origin, not a specific pinned ID) — pinning to one exact ID (derived from
- * the extension's manifest key) checked out correctly in isolated testing
- * but still failed in practice twice, and there's no way to verify from here
- * whether Chrome's "key"-based ID pinning is actually taking effect for a
- * given sideloaded install. The pairing token (random, 48 hex chars) is the
- * real secret boundary either way, so this trades a small amount of
- * defense-in-depth for the check actually working reliably.
+ * Origin: accepted when absent OR when it's some `chrome-extension://` origin
+ * — rejected only when it's a real webpage origin. Root-caused via a logged
+ * live pairing attempt: the extension's `host_permissions` for 127.0.0.1
+ * makes Chrome treat its fetches as a privileged cross-origin request that
+ * bypasses normal CORS, and in that mode Chrome sends NO Origin header at
+ * all. That's the legitimate, expected shape of every real request from
+ * this extension — not an anomaly to reject. (An earlier version of this
+ * check required a specific pinned extension ID, then any chrome-extension://
+ * origin, and rejected the real requests both times because it never
+ * accounted for Origin being absent in the first place.) The pairing token
+ * (random, 48 hex chars) is the actual secret boundary regardless.
  */
 
 const PORT = 47821
@@ -49,13 +52,24 @@ function mask(s: string | undefined | null): string {
   return `${s.slice(0, 4)}…${s.slice(-4)} (len ${s.length})`
 }
 
-function isExtensionOrigin(origin: string | undefined): origin is string {
-  return !!origin && origin.startsWith('chrome-extension://')
+/**
+ * The extension's manifest grants it `host_permissions` for 127.0.0.1, which
+ * makes Chrome treat its fetches here as a privileged cross-origin request
+ * that bypasses normal CORS entirely — confirmed by a real pairing attempt's
+ * log: the extension's actual request arrived with NO Origin header at all
+ * (`origin=undefined`), which is the expected, legitimate shape for this
+ * exact permission grant, not an anomaly. So: an absent Origin is fine — the
+ * one thing to still reject is an origin that's present but is an ordinary
+ * webpage's (an unprivileged page always sends its real Origin, since it has
+ * no such bypass), which is the actual threat this check exists for.
+ */
+function isAcceptableOrigin(origin: string | undefined): boolean {
+  return origin === undefined || origin.startsWith('chrome-extension://')
 }
 
 function corsHeaders(origin: string | undefined): Record<string, string> {
   return {
-    'Access-Control-Allow-Origin': isExtensionOrigin(origin) ? origin : 'null',
+    'Access-Control-Allow-Origin': origin ?? '*',
     'Access-Control-Allow-Headers': 'X-Autofill-Token',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
   }
@@ -95,7 +109,7 @@ async function authorize(req: IncomingMessage): Promise<AuthResult> {
       `received=${mask(token)} expected=${mask(real)} exactMatch=${token === real}`,
   )
 
-  if (!isExtensionOrigin(origin)) {
+  if (!isAcceptableOrigin(origin)) {
     logLine(`  -> REJECTED: wrong-origin (got ${JSON.stringify(origin)})`)
     return { ok: false, reason: 'wrong-origin' }
   }
