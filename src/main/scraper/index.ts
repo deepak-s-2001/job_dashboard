@@ -3,6 +3,7 @@ import { parseSalary } from '@shared/salary'
 import { findAdapter } from './adapters'
 import { renderPage } from './render'
 import { parseJobPostingLd } from './jsonld'
+import { htmlToText } from './htmltext'
 
 export { openLoginWindow } from './render'
 
@@ -47,6 +48,35 @@ function cleanTitle(raw: string | null): string | null {
   if (!raw) return null
   // strip common "· Company" / "| Company" / "- Job Board" tails
   return raw.split(/\s+[|·—-]\s+/)[0].trim() || raw.trim()
+}
+
+// \b so "pay" doesn't match inside "paid"/"payroll" — a real job page repeats
+// "pay"/"compensation" many times (benefits boilerplate, EEO statements), so
+// this has to try every occurrence, not just the first.
+const PAY_KEYWORD_RE = /\b(pay|salary|compensation)\b\s*(range)?/gi
+const PAY_NUMBERS_RE =
+  /\$?[\d,]{4,7}(?:\.\d+)?\s*(?:usd)?\s*(?:-|–|—|to)\s*\$?[\d,]{4,7}(?:\.\d+)?\s*(?:usd)?(?:\s*(?:per\s*(?:year|hour|annum)|\/\s*(?:yr|hr)))?/i
+
+/**
+ * Many enterprise ATS templates (Phenom People and similar) render a pay-range
+ * disclosure as its own page section, separate from the JobPosting JSON-LD
+ * `description` and outside whatever "main content" container the generic
+ * scrape biases toward — so it can be entirely absent from `jdText` even
+ * though it's plainly visible on the page. Search the FULL page text (all of
+ * it, via htmlToText on the raw HTML — not the main-content-biased `page.text`)
+ * for a pay keyword followed within a short window by a number range — trying
+ * every keyword occurrence, since most of them (benefits boilerplate, EEO
+ * statements) won't have numbers nearby and aren't the actual disclosure.
+ */
+function findPayRangeSnippet(fullPageText: string): string | null {
+  PAY_KEYWORD_RE.lastIndex = 0
+  let kw: RegExpExecArray | null
+  while ((kw = PAY_KEYWORD_RE.exec(fullPageText)) !== null) {
+    const window = fullPageText.slice(kw.index, kw.index + 200)
+    const nums = PAY_NUMBERS_RE.exec(window)
+    if (nums) return `${kw[0].trim()}: ${nums[0].trim()}`
+  }
+  return null
 }
 
 export async function scrapeUrl(rawUrl: string): Promise<ScrapedJob> {
@@ -95,7 +125,7 @@ async function scrapeUrlImpl(rawUrl: string): Promise<ScrapedJob> {
     const ld = parseJobPostingLd(page.jsonLd)
     const site = siteFromHost(url)
 
-    const jdText = (ld?.description && ld.description.length > 200 ? ld.description : page.text) ?? ''
+    let jdText = (ld?.description && ld.description.length > 200 ? ld.description : page.text) ?? ''
     const roleTitle =
       cleanTitle(ld?.title ?? null) ??
       cleanTitle(page.meta['og:title'] ?? null) ??
@@ -104,6 +134,18 @@ async function scrapeUrlImpl(rawUrl: string): Promise<ScrapedJob> {
       ld?.company ??
       page.meta['og:site_name'] ??
       null
+
+    // The JobPosting JSON-LD (or the main-content-biased jdText above) often
+    // omits a pay-range disclosure that's plainly visible elsewhere on the
+    // page — search the whole rendered page, not just what became jdText.
+    let salaryRange = ld?.salaryRange ?? null
+    if (!salaryRange) {
+      const paySnippet = findPayRangeSnippet(htmlToText(page.html))
+      if (paySnippet) {
+        salaryRange = paySnippet
+        if (!jdText.includes(paySnippet)) jdText = `${jdText.trim()}\n\n${paySnippet}`
+      }
+    }
 
     const enough = jdText.trim().length >= 240
     return {
@@ -116,7 +158,7 @@ async function scrapeUrlImpl(rawUrl: string): Promise<ScrapedJob> {
       workplaceType: ld?.workplaceType ?? null,
       employmentType: ld?.employmentType ?? null,
       datePosted: ld?.datePosted ?? null,
-      salaryRange: ld?.salaryRange ?? null,
+      salaryRange,
       jdText: jdText.trim(),
       needsManualPaste: !enough,
       note: ld

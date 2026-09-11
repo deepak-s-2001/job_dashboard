@@ -46,13 +46,23 @@ function rateLimited(token: string): boolean {
   return recent.length > RATE_LIMIT
 }
 
-async function authorize(req: IncomingMessage): Promise<string | null> {
-  if (req.headers.origin !== ALLOWED_ORIGIN) return null
+type AuthResult = { ok: true; token: string } | { ok: false; reason: string }
+
+async function authorize(req: IncomingMessage): Promise<AuthResult> {
+  if (req.headers.origin !== ALLOWED_ORIGIN) {
+    console.error(
+      `[localServer] rejected request from Origin "${req.headers.origin}" — expected "${ALLOWED_ORIGIN}". If this is really the extension, its Chrome-assigned ID doesn't match what this app allows; check chrome://extensions and the extension's Options page for its actual ID.`,
+    )
+    return { ok: false, reason: 'wrong-origin' }
+  }
   const token = req.headers['x-autofill-token']
-  if (typeof token !== 'string' || !token) return null
+  if (typeof token !== 'string' || !token) return { ok: false, reason: 'missing-token' }
   const real = await getOrCreateExtensionToken()
-  if (token !== real) return null
-  return token
+  if (token !== real) {
+    console.error('[localServer] rejected request with a pairing token that does not match.')
+    return { ok: false, reason: 'wrong-token' }
+  }
+  return { ok: true, token }
 }
 
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -71,11 +81,16 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     return
   }
 
-  const token = await authorize(req)
-  if (!token) {
-    send(res, 401, { error: 'Unauthorized — check the pairing token in the extension options.' })
+  const auth = await authorize(req)
+  if (!auth.ok) {
+    const message =
+      auth.reason === 'wrong-origin'
+        ? 'Unauthorized — this request did not come from the paired extension (its ID may not match what this app allows).'
+        : 'Unauthorized — check the pairing token in the extension options.'
+    send(res, 401, { error: message, reason: auth.reason })
     return
   }
+  const token = auth.token
   if (rateLimited(token)) {
     send(res, 429, { error: 'Too many requests.' })
     return
