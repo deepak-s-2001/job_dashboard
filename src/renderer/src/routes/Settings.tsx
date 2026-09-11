@@ -449,7 +449,10 @@ function ExtensionCard() {
         <p className="mt-1.5 text-[12px] text-muted">
           {ext.token.length} characters — the box above is truncated for display; use{' '}
           <b>Copy token</b> rather than selecting the text by hand, and check the extension's
-          Options page shows the same character count after saving.
+          Options page shows the same character count after saving. Every pairing attempt is
+          logged to <code>autofill-server.log</code> in "Open data folder" below — it records
+          exactly what was received and why it was accepted or rejected (the full token is
+          never written, only a masked prefix/suffix).
         </p>
       )}
       {!ext && (

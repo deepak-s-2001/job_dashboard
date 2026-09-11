@@ -1,10 +1,12 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
-import { readFileSync } from 'node:fs'
+import { readFileSync, appendFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   getOrCreateExtensionToken,
   matchApplicationForUrl,
   getProfile,
   mutateApplication,
+  dataDir,
 } from './store'
 
 /**
@@ -26,6 +28,27 @@ import {
 
 const PORT = 47821
 
+/**
+ * Every request/auth-decision gets appended here — this app has no visible
+ * console once packaged, so this is the only way to see what the extension
+ * actually sent when a user reports "Unauthorized" and everything looks
+ * right from both ends. Never write the full token — mask it so this file
+ * stays safe to paste into a chat/issue if needed.
+ */
+const LOG_PATH_NAME = 'autofill-server.log'
+function logLine(msg: string): void {
+  try {
+    appendFileSync(join(dataDir(), LOG_PATH_NAME), `${new Date().toISOString()} ${msg}\n`)
+  } catch {
+    /* logging must never break the request it's logging */
+  }
+}
+function mask(s: string | undefined | null): string {
+  if (!s) return '(none)'
+  if (s.length <= 8) return `(len ${s.length}, too short to mask usefully)`
+  return `${s.slice(0, 4)}…${s.slice(-4)} (len ${s.length})`
+}
+
 function isExtensionOrigin(origin: string | undefined): origin is string {
   return !!origin && origin.startsWith('chrome-extension://')
 }
@@ -34,6 +57,7 @@ function corsHeaders(origin: string | undefined): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': isExtensionOrigin(origin) ? origin : 'null',
     'Access-Control-Allow-Headers': 'X-Autofill-Token',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
   }
 }
 
@@ -60,17 +84,41 @@ function rateLimited(token: string): boolean {
 type AuthResult = { ok: true; token: string } | { ok: false; reason: string }
 
 async function authorize(req: IncomingMessage): Promise<AuthResult> {
-  if (!isExtensionOrigin(req.headers.origin)) {
-    console.error(`[localServer] rejected request from non-extension Origin "${req.headers.origin}"`)
+  const origin = req.headers.origin
+  const tokenHeader = req.headers['x-autofill-token']
+  const token = typeof tokenHeader === 'string' ? tokenHeader : undefined
+  const real = await getOrCreateExtensionToken()
+
+  logLine(
+    `auth: origin=${JSON.stringify(origin)} tokenHeaderPresent=${tokenHeader !== undefined} ` +
+      `tokenHeaderCount=${Array.isArray(tokenHeader) ? tokenHeader.length : 1} ` +
+      `received=${mask(token)} expected=${mask(real)} exactMatch=${token === real}`,
+  )
+
+  if (!isExtensionOrigin(origin)) {
+    logLine(`  -> REJECTED: wrong-origin (got ${JSON.stringify(origin)})`)
     return { ok: false, reason: 'wrong-origin' }
   }
-  const token = req.headers['x-autofill-token']
-  if (typeof token !== 'string' || !token) return { ok: false, reason: 'missing-token' }
-  const real = await getOrCreateExtensionToken()
+  if (!token) {
+    logLine('  -> REJECTED: missing-token')
+    return { ok: false, reason: 'missing-token' }
+  }
   if (token !== real) {
-    console.error('[localServer] rejected request with a pairing token that does not match.')
+    // exactMatch already logged above, but spell out WHERE they diverge —
+    // this is the one thing "looks identical" character-count checks can't show.
+    let diffAt = -1
+    for (let i = 0; i < Math.max(token.length, real.length); i++) {
+      if (token[i] !== real[i]) {
+        diffAt = i
+        break
+      }
+    }
+    logLine(
+      `  -> REJECTED: wrong-token (lengths: received=${token.length} expected=${real.length}, first differs at index ${diffAt})`,
+    )
     return { ok: false, reason: 'wrong-token' }
   }
+  logLine('  -> accepted')
   return { ok: true, token }
 }
 
@@ -79,9 +127,24 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   const origin = req.headers.origin
   const s = (status: number, body: unknown) => send(res, status, body, origin)
 
+  logLine(
+    `${req.method} ${url.pathname}${url.search} — headers: ${JSON.stringify({
+      origin: req.headers.origin,
+      'x-autofill-token': mask(
+        typeof req.headers['x-autofill-token'] === 'string'
+          ? (req.headers['x-autofill-token'] as string)
+          : undefined,
+      ),
+      'access-control-request-headers': req.headers['access-control-request-headers'],
+      'access-control-request-method': req.headers['access-control-request-method'],
+      'user-agent': req.headers['user-agent'],
+    })}`,
+  )
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204, corsHeaders(origin))
     res.end()
+    logLine(`  OPTIONS preflight answered 204, Access-Control-Allow-Origin=${corsHeaders(origin)['Access-Control-Allow-Origin']}`)
     return
   }
 
