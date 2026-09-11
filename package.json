@@ -5,6 +5,9 @@
   "author": "Deepak S",
   "license": "MIT",
   "main": "./out/main/index.js",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",

@@ -455,9 +455,12 @@ npm install
 | `npm run dist` | `build` + package a Windows installer to `release/Job Dashboard-Setup-<version>.exe` |
 | `npm run dist:dir` | same but leaves the unpacked app in `release/win-unpacked/` (no installer) |
 
-The produced `.exe` is byte-for-byte reproducible from a clean checkout — same Node, same
-`npm ci`, same `npm run dist`. It is unsigned; sign it yourself with `signtool` if you need to
-distribute it without the SmartScreen prompt.
+The build is reproducible from source: a clean `git clone` + `npm ci` + `npm run dist` on a
+matching Node version (see `engines` in `package.json`) produces a working installer with the
+same functional contents — verified by rebuilding from a fresh clone against this exact commit.
+The `.exe` itself is **not byte-identical** between builds (NSIS/asar packing embeds timestamps),
+so don't rely on comparing hashes to verify a download — read the source instead. It is unsigned;
+sign it yourself with `signtool` if you need to distribute it without the SmartScreen prompt.
 
 **Dev-only knobs** (compiled out of packaged builds): `JOBDASH_DATA_DIR=<path>` runs against a
 throwaway data folder; `SMOKE=<png> SMOKE_HASH=<route>` takes a one-off screenshot;
