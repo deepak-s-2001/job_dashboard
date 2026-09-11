@@ -444,7 +444,15 @@ function ExtensionCard() {
             {copied ? '✓ Copied' : 'Copy token'}
           </Button>
         </div>
-      ) : (
+      ) : null}
+      {ext && (
+        <p className="mt-1.5 text-[12px] text-muted">
+          {ext.token.length} characters — the box above is truncated for display; use{' '}
+          <b>Copy token</b> rather than selecting the text by hand, and check the extension's
+          Options page shows the same character count after saving.
+        </p>
+      )}
+      {!ext && (
         <p className="mt-3 text-sm text-muted">Restart Job Dashboard to generate a token.</p>
       )}
     </Card>
