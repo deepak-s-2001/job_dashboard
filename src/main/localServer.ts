@@ -39,6 +39,15 @@ const PORT = 47821
  * stays safe to paste into a chat/issue if needed.
  */
 const LOG_PATH_NAME = 'autofill-server.log'
+/**
+ * Structured per-field autofill feedback from the extension popup, one JSON
+ * line per submission — see /feedback below. Deliberately not part of
+ * db.json: this is a diagnostic log for a human (or a future session) to
+ * read and turn into concrete LABEL_SYNONYMS/buildValues fixes in the
+ * extension repo, not user-facing application data and not a trainable
+ * model input.
+ */
+const FEEDBACK_LOG_NAME = 'autofill-feedback.log'
 function logLine(msg: string): void {
   try {
     appendFileSync(join(dataDir(), LOG_PATH_NAME), `${new Date().toISOString()} ${msg}\n`)
@@ -70,9 +79,28 @@ function isAcceptableOrigin(origin: string | undefined): boolean {
 function corsHeaders(origin: string | undefined): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin ?? '*',
-    'Access-Control-Allow-Headers': 'X-Autofill-Token',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'X-Autofill-Token, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   }
+}
+
+function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let data = ''
+    req.on('data', (chunk) => {
+      data += chunk
+      if (data.length > 1_000_000) req.destroy() // feedback bodies are tiny; guard against a runaway sender
+    })
+    req.on('end', () => {
+      if (!data) return resolve(null)
+      try {
+        resolve(JSON.parse(data))
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error('Invalid JSON body'))
+      }
+    })
+    req.on('error', reject)
+  })
 }
 
 let server: Server | null = null
@@ -216,6 +244,23 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     } catch {
       s(404, { error: 'The stored PDF is missing from disk.' })
     }
+    return
+  }
+
+  if (url.pathname === '/feedback' && req.method === 'POST') {
+    let body: unknown
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      s(400, { error: 'Invalid JSON body.' })
+      return
+    }
+    if (!body || typeof body !== 'object' || !Array.isArray((body as { entries?: unknown }).entries)) {
+      s(400, { error: 'Expected { url, company, roleTitle, timestamp, entries[] }.' })
+      return
+    }
+    appendFileSync(join(dataDir(), FEEDBACK_LOG_NAME), `${JSON.stringify(body)}\n`)
+    s(200, { ok: true })
     return
   }
 
