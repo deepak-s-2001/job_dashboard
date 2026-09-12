@@ -16,3 +16,6 @@ db.json
 secrets.bin
 backups/
 resumes/
+
+# standing process notes, not project documentation — see the file itself
+PUSH_CHECKLIST.md

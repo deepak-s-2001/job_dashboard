@@ -22,12 +22,17 @@ calendar, and a "close the loop" list of applications that have gone dead.
 | Your data | **100% on your machine** | their cloud; [job platforms sell data](#your-data--privacy) | their cloud | yours |
 | Keeps itself useful | dashboard + nudges | goes stale like any tracker | — | dies by week two |
 | Tells you what's working | **funnel, response rate by source/resume, benchmarks** | partial (paywalled) | no | you build the formulas |
-| Autofills applications | **no — on purpose** (autofill is unreliable and tanks your ATS reputation) | some | that's the pitch | no |
+| Autofills applications | **yes — from the tailored resume you attached to *that* job**, via a companion browser extension | some — one generic saved profile, wrong once you tailor a resume | that's the pitch, same generic-profile approach | no |
 | Interview stage | **per-round log + cross-job calendar** | one "interviewing" status | no | you improvise |
 
-Everything stays on your machine. There is **no account, no server, no sync, no telemetry**.
-The only network calls are to the job site you paste (to read the posting) and — only when you
-press **Extract** — to the Anthropic API with *your* key.
+Everything stays on your machine. There is **no account, no cloud server, no sync, no
+telemetry**. The only *outbound* network calls are to the job site you paste (to read the
+posting) and — only when you press **Extract** or **Parse for autofill** — to the Anthropic API
+with *your* key. The one local exception: if you install the companion browser extension (see
+[Browser extension](#browser-extension) below), this app runs a small HTTP server bound to
+`127.0.0.1` only, so the extension can ask "what's the tailored resume for this job" — nothing
+on that server is reachable from outside your machine, and nothing on the internet can reach it
+either.
 
 ---
 
@@ -40,13 +45,16 @@ press **Extract** — to the Anthropic API with *your* key.
 - [Network & referrals](#network--referrals)
 - [To-dos](#to-dos)
 - [Using it](#using-it)
+- [Browser extension](#browser-extension)
 - [Your data & privacy](#your-data--privacy)
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
 - [Build it yourself](#build-it-yourself)
 - [Project layout](#project-layout)
+- [Known limitations (app-wide)](#known-limitations-app-wide)
 - [Troubleshooting](#troubleshooting)
 - [Security](#security)
+- [Versioning](#versioning)
 - [License](#license)
 
 ---
@@ -154,6 +162,14 @@ box (see [Filling Workday's skills field](#filling-workdays-skills-field)).
 Drag the PDF onto the job (or pick a file). It's **copied** into the app's data folder — your
 original is untouched and can be moved or deleted. You can keep multiple versions per job and
 mark one primary. The viewer renders the real PDF exactly (via pdf.js), page by page.
+
+If you plan to use the [browser extension](#browser-extension) to autofill the real
+application, click **✦ Parse for autofill** on the resume. One more Claude call reads the PDF's
+actual text (headless, no rendering) and extracts a structured
+headline/summary/skills/experience list — shown in a fully editable review before anything
+saves, since a resume with more than one text column can interleave lines from both columns
+(a real limitation of reading PDF text in draw order — this review step exists specifically to
+catch that before it reaches a real application).
 
 ### 4. Track it, and read the dashboard
 
@@ -293,10 +309,124 @@ OS notifications, ever.
 | See who can refer you | A job's **Network** tab — contacts at that company appear automatically; link others by hand |
 | Draft a referral email | **Draft email** on any contact → edit → **Copy** or **Open in mail app** |
 | Set your sign-off | **Settings → You** — name, email, phone, LinkedIn (used only in the drafted emails) |
+| Set your address | **Settings → You → Address** — City has worldwide autocomplete; picking a suggestion also fills State and Country |
 | Command palette | `Ctrl`+`K` — jump to any job or contact, add, or open Settings |
 | Re-run extraction | Job detail → **Re-run extraction** (one more Claude call) |
+| Parse a resume for autofill | Job → resume pane → **✦ Parse for autofill** → review → save |
+| Pair the browser extension | **Settings → Browser extension** → copy the pairing token → paste into the extension's Options page — see [Browser extension](#browser-extension) |
+| Autofill a real application | Open the application page → click the extension icon → **Fill this page** |
 | Back up | **Settings → Export a copy now** writes `db.json` + all resumes to a folder you choose |
 | Restore | **Settings → Automatic backups** — the app snapshots `db.json` on every launch (keeps the last 20) and can roll back |
+
+---
+
+## Browser extension
+
+A companion **Chrome extension** (a separate sibling repo,
+[`job-dashboard-extension`](../job-dashboard-extension)) autofills a real job application form
+from **the JD-tailored resume you already attached to that specific job** — not one generic
+saved profile like Simplify, LazyApply, or Teal use. Different job, different tailored resume,
+different autofill — that's the entire point of it.
+
+### Install it
+
+Not published on the Chrome Web Store (a personal tool, sideloaded — this costs nothing and
+works indefinitely for personal use). It's a separate repo, `job-dashboard-extension`, meant to
+live as a sibling folder next to this one — see that repo's own README for exact install/build
+notes; the short version:
+
+1. Get the `job-dashboard-extension` folder onto your machine, next to this repo (clone it if
+   it's hosted somewhere, or copy the folder directly).
+2. In Chrome, open `chrome://extensions`, turn on **Developer mode** (top right toggle).
+3. Click **Load unpacked** → select the `job-dashboard-extension` folder.
+4. The extension's icon appears in your toolbar. Pin it (puzzle-piece icon → pin) so it's
+   always visible.
+
+### Pair it to Job Dashboard (one-time)
+
+The extension needs a pairing token so only *your* Job Dashboard install can talk to it:
+
+1. In Job Dashboard: **Settings → Browser extension** → copy the pairing token shown there.
+2. Click the extension's icon → **Options** (or right-click the icon → *Options*).
+3. Paste the token, click **Save**. It should confirm the connection.
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant Ext as Extension options page
+    participant App as Job Dashboard (Settings)
+    participant Srv as Job Dashboard's local server (127.0.0.1:47821)
+
+    You->>App: Settings -> Browser extension -> copy token
+    You->>Ext: paste token, Save
+    Ext->>Srv: GET /health (unauthenticated — "are you running?")
+    Srv-->>Ext: ok
+    Ext->>Srv: GET /lookup (with the token, to confirm pairing)
+    Srv-->>Ext: 200 (paired) or 401 (wrong token/origin)
+```
+
+### Use it
+
+1. Attach a resume to the job in Job Dashboard and click **✦ Parse for autofill** on it (see
+   [How it works, step 3](#3-attach-the-resume-you-sent)) — the extension fills from this
+   parsed data, not the raw PDF.
+2. Open the **real application page** for that job in your browser.
+3. Click the extension's icon:
+   - If the page's URL matches a saved application exactly (or the same job posting on the
+     same ATS under a different URL), it fills immediately.
+   - If it can't tell which job you mean, it shows a picker of your 5 most recent applications.
+4. Click **Fill this page**. It fills every field it recognizes (name, contact info, address,
+   work authorization, EEO questions, and the specific experience/education entries from your
+   tailored resume) and attaches the resume PDF to any file-upload field it finds.
+5. For Experience/Education sections gated behind a **"+ Add"** button, it clicks "+Add" itself
+   — once per real entry your tailored resume actually has, never more — before filling each
+   revealed row from that entry's own data.
+6. **Review everything before submitting.** This never submits a form or advances a multi-step
+   wizard on its own, and the file-attach step is best-effort — some ATS platforms (Workday
+   especially) don't always confirm a programmatically-set file was truly accepted by their own
+   validation.
+7. Right after a fill, the extension's popup shows a ✓/✗ review list for each field it touched.
+   Mark anything wrong and optionally note what it should have been, then **Send feedback** —
+   this is saved as a plain-text log on your machine (`autofill-feedback.log`, next to your
+   other Job Dashboard data) to help identify patterns worth fixing in a future update. It is
+   **not** sent anywhere, and it does not train any model — it's a diagnostic log for a human
+   (you, or a future coding session) to read.
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant Page as Job application page
+    participant Ext as Extension (popup + content script)
+    participant Srv as Job Dashboard's local server
+
+    You->>Ext: click the extension icon
+    Ext->>Srv: GET /lookup?url=<current tab URL> (+ pairing token)
+    Srv-->>Ext: matched application + your profile
+    You->>Ext: click "Fill this page"
+    Ext->>Page: click any "+Add" buttons needed, then fill each field
+    Ext->>Srv: GET /resume-file/:id
+    Srv-->>Ext: the resume PDF, base64
+    Ext->>Page: attach the PDF to the file-upload field
+    You->>Ext: mark any field correct/wrong in the review list
+    Ext->>Srv: POST /feedback (only if you sent it)
+    Srv-->>Ext: saved to autofill-feedback.log
+    You->>Page: review everything, submit yourself
+```
+
+### Known limitations
+
+- Requires Job Dashboard to be running (the local server it talks to lives inside the app).
+- Custom-styled dropdowns for EEO questions (not a real native `<select>`) aren't handled —
+  fill those in by hand.
+- File-attach can silently fail to register on some ATS's own JS validation even though the
+  extension successfully set the input — always double-check before submitting.
+- **A small number of ATS text fields can mangle a long pasted description on their own end**
+  — one confirmed case (a SmartRecruiters application) inserted spurious spaces mid-word
+  ("firmware" → "fir mware") purely from that site's own form component reflowing a large
+  block of pasted text, independently verified by reading the actual stored (clean) source
+  data straight out of this app's database. This is a bug in that ATS's own field, not in Job
+  Dashboard or the extension — if you hit it, the safest fix is to correct the field by hand
+  after filling.
 
 ---
 
@@ -306,10 +436,16 @@ Everything lives in one folder in your Windows profile:
 
 ```
 %APPDATA%\job-dashboard\
-├─ db.json                  applications, interviews, contacts, to-dos, your sign-off (plain JSON)
+├─ db.json                  applications, interviews, contacts, to-dos, your sign-off,
+│                            extracted resume data, and the extension's pairing token
+│                            (plain JSON — the token is a random local secret, not your API key)
 ├─ resumes\<job-id>\*.pdf   copies of the resumes you attached
 ├─ backups\db-*.json        automatic snapshots of db.json (last 20)
-└─ secrets.bin              your Anthropic API key, encrypted by Windows (DPAPI)
+├─ secrets.bin              your Anthropic API key, encrypted by Windows (DPAPI)
+├─ autofill-server.log      request log for the local extension server (diagnostic only —
+│                            written if you install the browser extension; masked tokens)
+└─ autofill-feedback.log    per-field autofill feedback you chose to send, one JSON line
+                             each (diagnostic only — see "Browser extension" above)
 ```
 
 - **None of this is in this repository.** The repo is code only. A fresh install starts with
@@ -317,11 +453,20 @@ Everything lives in one folder in your Windows profile:
   machine.
 - **No telemetry, no analytics, no auto-update, no account — and nothing is ever sold.**
   Investigations have found [8 of 9 job-search platforms sell user data](https://privacyrights.org/resources-tools/advocacy/job-search-industry-privacy-concerns-letter-federal-trade-commission)
-  and share it with an average of 5+ third parties. This app makes **zero** network calls
-  except to the job page you paste and (only on **Extract**) to Anthropic with your own key.
+  and share it with an average of 5+ third parties. This app makes **zero** outbound network
+  calls except to the job page you paste and (only on **Extract**/**Parse for autofill**) to
+  Anthropic with your own key. The one *inbound* surface is the local server the browser
+  extension talks to (see below) — bound to `127.0.0.1` only, unreachable from any other
+  machine or from the internet.
 - The renderer (the UI) is sandboxed and — enforced by a Content-Security-Policy — cannot make
   any network request at all. The scraping happens in the main process; the one AI call
   happens in the main process with your key, which the UI can never read.
+- If you install the browser extension, this app additionally runs a plain HTTP server on
+  `127.0.0.1:47821` while it's open, so the extension can ask "what's the tailored resume for
+  this job." It requires a random pairing token (generated once, stored in `db.json`) on every
+  request, and separately checks the request's Origin to reject anything that isn't the
+  extension itself — a normal webpage cannot talk to it even if it tried. See the extension
+  repo's own README for the full request/response flow.
 - To move to a new machine: copy the whole `%APPDATA%\job-dashboard\` folder.
 
 ---
@@ -338,10 +483,12 @@ Everything lives in one folder in your Windows profile:
 | Styling | [Tailwind CSS](https://tailwindcss.com/) 3 + a hand-built neobrutalist component set | thick borders, hard shadows, bold colour |
 | Motion | [Framer Motion](https://www.framer.com/motion/) 11 | hover/press springs, list transitions; respects "reduce motion" |
 | Search | [Fuse.js](https://www.fusejs.io/) 7 | fuzzy in-memory search over the records |
-| PDF | [pdf.js](https://mozilla.github.io/pdf.js/) (`pdfjs-dist` 4.10) | exact canvas rendering of the real file — no text conversion |
+| PDF | [pdf.js](https://mozilla.github.io/pdf.js/) (`pdfjs-dist` 4.10) | exact canvas rendering of the real file — no text conversion. Also used headless (its legacy Node build) to extract plain text for **Parse for autofill**, with no browser/canvas involved |
 | Data store | one atomic JSON file — `src/main/jsondb.ts`, ~60 lines | personal scale; portable; no native module to compile |
 | Secrets | Electron `safeStorage` (Windows DPAPI) | key encrypted at rest, main-process only |
-| AI | [`@anthropic-ai/sdk`](https://github.com/anthropics/anthropic-sdk-typescript) | structured-output extraction; runs in the main process |
+| AI | [`@anthropic-ai/sdk`](https://github.com/anthropics/anthropic-sdk-typescript) | structured-output extraction (JD → skills/insights, resume → tailored fields); runs in the main process |
+| Local API | plain `node:http`, `127.0.0.1:47821` | lets the companion browser extension read this app's data — no framework, no external dependency |
+| City data | `country-state-city` (dev-only) → generated static list | worldwide city/state/country autocomplete in Settings, code-split and lazy-loaded; the package itself never ships in the app |
 | Fonts | Space Grotesk + Inter + JetBrains Mono, self-hosted | offline, no CDN |
 
 No database engine, no ORM, no state-management library, no CSS-in-JS runtime, no backend.
@@ -371,6 +518,9 @@ flowchart TB
         SECRETS["secrets.ts — safeStorage encrypt / decrypt"]
         SCRAPER["scraper/ — ATS adapters + hidden window + JSON-LD / meta / text"]
         EXTRACT["extract.ts — one Claude call, structured output"]
+        PDFTEXT["pdfText.ts — headless PDF -> text"]
+        TAILOR["tailoredResume.ts — one Claude call, resume -> structured fields"]
+        LOCALSRV["localServer.ts — 127.0.0.1:47821, token + Origin gated"]
     end
 
     subgraph preload["PRELOAD — contextBridge"]
@@ -383,6 +533,7 @@ flowchart TB
 
     JOBSITE["Job posting — Greenhouse / Lever / Ashby / Workday / LinkedIn / any URL"]
     ANTHROPIC["api.anthropic.com"]
+    EXT["Browser extension — separate repo, separate process"]
 
     UI <--> API
     API <--> IPC
@@ -392,12 +543,21 @@ flowchart TB
     STORE --> BAK
     IPC --> SCRAPER -->|"reads the page, no credentials"| JOBSITE
     IPC --> EXTRACT -->|"HTTPS + your key, only on Extract"| ANTHROPIC
+    IPC --> PDFTEXT --> RES
+    IPC --> TAILOR -->|"HTTPS + your key, only on Parse for autofill"| ANTHROPIC
     EXTRACT -.->|reads key| SECRETS
+    TAILOR -.->|reads key| SECRETS
+    LOCALSRV --> STORE
+    LOCALSRV --> FILES
+    EXT <-->|"loopback only — 127.0.0.1"| LOCALSRV
+    EXT -->|"fills the real page"| JOBSITE
 
     classDef store fill:#fff3d6,stroke:#141414,stroke-width:2px;
     classDef ext fill:#ffe0dc,stroke:#141414,stroke-width:2px;
+    classDef companion fill:#e0f0ff,stroke:#141414,stroke-width:2px;
     class DB,RES,SEC,BAK store;
     class JOBSITE,ANTHROPIC ext;
+    class EXT companion;
 ```
 
 ### Adding a job — the data flow
@@ -482,6 +642,10 @@ src/
     files.ts            resume PDF copy / read / delete
     secrets.ts          API key encrypt/decrypt via safeStorage
     extract.ts          the single Claude call + structured-output schema
+    aiHelpers.ts        shared coercion helpers (asStrOrNull, etc.) for both AI calls
+    pdfText.ts          headless PDF -> plain text (pdfjs-dist legacy Node build)
+    tailoredResume.ts   resume text -> structured fields, second Claude call
+    localServer.ts      127.0.0.1 HTTP server the browser extension talks to
     scraper/
       index.ts          orchestration: adapter → render → parse
       render.ts         hidden BrowserWindow, in-page text/JSON-LD extraction
@@ -492,12 +656,31 @@ src/
     index.ts            contextBridge — the window.api definition
   renderer/             React SPA
     src/routes/         Overview, Applications, Detail, Add, Import, Todos, Network, Settings
-    src/components/      AppCard, FilterRail, PdfViewer, JobPrompt, ui/*
-    src/lib/            api client, fuse setup, filters, formatting, prompt builder
+    src/components/      AppCard, FilterRail, PdfViewer, JobPrompt, CityInput, ui/*
+    src/lib/            api client, fuse setup, filters, formatting, prompt builder,
+                         usLocations.ts (city/state/country autocomplete + parsing)
   shared/
     types.ts            data model, shared by all three contexts
     ipc.ts              IPC channel-name constants
 ```
+
+---
+
+## Known limitations (app-wide)
+
+- **Windows only, 64-bit.** No macOS/Linux build exists yet.
+- **Multi-column resumes** (a sidebar next to a main column) can have their text interleaved
+  when read by **Parse for autofill** — `pdfjs` reports text in draw order, not visual reading
+  order, so a genuinely two-column layout can mix lines from both columns. This is why that
+  feature always shows a full editable review before saving anything; a single-column resume
+  (the common case) is unaffected.
+- **Some career sites actively block automated reads.** You'll see the *paste the description*
+  fallback box in that case — nothing silently fails.
+- **The browser extension has its own limitations** — see [Browser extension → Known
+  limitations](#known-limitations) above, including a specific ATS-side bug (not this app's)
+  that can mangle a long pasted field on that site's own end.
+- The installer is **unsigned** (no code-signing certificate) — Windows SmartScreen will warn
+  on first run. Build from source yourself if you'd rather not click through that.
 
 ---
 
@@ -527,6 +710,15 @@ src/
 - Debug hooks are compiled out of packaged builds.
 
 Full notes and the audit that established this are in the commit history.
+
+---
+
+## Versioning
+
+This app and the browser extension are versioned **independently** — `package.json` here,
+`manifest.json` in the extension repo — each starting at `1.0.0`. Semver-ish: patch (`1.0.x`)
+for fixes, minor (`1.x.0`) for new features, major only for a real breaking change to the data
+model or the extension's local-API contract.
 
 ---
 
