@@ -29,6 +29,36 @@ interface TextItem {
   str: string
   x: number
   y: number
+  width: number
+}
+
+/**
+ * Joins one line's items left-to-right, inserting a space only where the
+ * horizontal gap between items looks like an actual word break — not
+ * unconditionally between every item. Many resume PDFs (especially
+ * Word/Google-Docs exports) emit kerned glyph pairs as separate text items
+ * with only a fraction-of-a-point gap between them; joining every item with
+ * a space turned "by" into "b y" and "AWS" into "A WS" (confirmed live from
+ * a user-reported paste). The threshold is scaled to the previous item's own
+ * average glyph width rather than a fixed point size, since it isn't
+ * available here — a real inter-word space is reliably much wider relative
+ * to a single glyph than a kerning nudge is.
+ */
+function joinLineItems(line: TextItem[]): string {
+  const sorted = [...line].sort((a, b) => a.x - b.x)
+  let result = ''
+  let prevEndX: number | null = null
+  let prevAvgWidth = 0
+  for (const it of sorted) {
+    if (prevEndX !== null) {
+      const gap = it.x - prevEndX
+      if (gap > prevAvgWidth * 0.35) result += ' '
+    }
+    result += it.str
+    prevEndX = it.x + it.width
+    prevAvgWidth = it.width / Math.max(it.str.length, 1)
+  }
+  return result
 }
 
 /** Group items into lines by Y (rounded), sort each line left-to-right, lines top-to-bottom. */
@@ -42,14 +72,7 @@ function joinReadingOrder(items: TextItem[]): string {
   }
   return [...lines.entries()]
     .sort((a, b) => b[0] - a[0]) // top of page first (PDF y grows upward)
-    .map(([, line]) =>
-      line
-        .sort((a, b) => a.x - b.x)
-        .map((it) => it.str)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    )
+    .map(([, line]) => joinLineItems(line).replace(/\s+/g, ' ').trim())
     .filter(Boolean)
     .join('\n')
 }
@@ -72,8 +95,8 @@ export async function extractPdfText(storedPath: string): Promise<string> {
       const items: TextItem[] = content.items
         .filter((it) => 'transform' in it && 'str' in it && !!it.str.trim())
         .map((it) => {
-          const item = it as { str: string; transform: number[] }
-          return { str: item.str, x: item.transform[4], y: item.transform[5] }
+          const item = it as { str: string; transform: number[]; width: number }
+          return { str: item.str, x: item.transform[4], y: item.transform[5], width: item.width }
         })
       pages.push(joinReadingOrder(items))
     }
