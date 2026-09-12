@@ -5,3 +5,52 @@ export const WORK_ARRANGEMENTS = ['Remote', 'Remote (US)', 'Hybrid', 'On-site']
 
 export const loadLocations = () =>
   import('./locations.data').then((m) => m.LOCATIONS)
+
+// Same underlying list, minus the work-arrangement pseudo-entries — for a
+// real address field (Settings' "You" card) where "Remote"/"Hybrid" are
+// never a valid answer. See CityInput.
+export const loadCityLocations = () =>
+  loadLocations().then((l) => l.filter((v) => !WORK_ARRANGEMENTS.includes(v)))
+
+// Only used to tell "City, State" (US) apart from "City, Country" (everyone
+// else) when parsing a chosen label back into parts — see
+// parseLocationParts. Small and hand-maintained deliberately: the full
+// country-state-city package is a devDependency only (see gen-locations.mjs),
+// not shipped to the renderer, so this list can't be derived from it at
+// runtime.
+const US_STATE_NAMES = new Set([
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
+  'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
+  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+  'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
+  'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+  'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
+  'West Virginia', 'Wisconsin', 'Wyoming', 'Puerto Rico', 'Guam', 'American Samoa',
+  'United States Virgin Islands', 'Northern Mariana Islands',
+])
+
+/**
+ * Parses one LOCATIONS entry ("City", "City, State", "City, State, Country",
+ * or "City, Country" — the exact shapes gen-locations.mjs writes) back into
+ * its parts, so picking a suggestion can fill City/State/Country together
+ * instead of just the city text. Returns null for a work-arrangement entry
+ * or anything with more parts than that format ever produces — i.e. free
+ * text the user typed by hand rather than a chosen suggestion.
+ */
+export function parseLocationParts(
+  label: string,
+): { city: string; state: string; country: string } | null {
+  if (WORK_ARRANGEMENTS.includes(label)) return null
+  const parts = label
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+  if (parts.length === 0 || parts.length > 3) return null
+  if (parts.length === 1) return { city: parts[0], state: '', country: '' }
+  if (parts.length === 3) return { city: parts[0], state: parts[1], country: parts[2] }
+  const [city, second] = parts
+  return US_STATE_NAMES.has(second)
+    ? { city, state: second, country: 'United States' }
+    : { city, state: '', country: second }
+}

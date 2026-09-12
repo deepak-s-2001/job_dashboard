@@ -6,6 +6,8 @@ import { useConfirm } from '@/components/ui/Confirm'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Fieldset, Select } from '@/components/ui/Field'
+import { CityInput } from '@/components/CityInput'
+import { parseLocationParts } from '@/lib/usLocations'
 import { Spinner } from '@/components/ui/misc'
 import { money } from '@/lib/format'
 import { useCopy } from '@/lib/useCopy'
@@ -311,7 +313,27 @@ function ProfileCard() {
           <Input placeholder="123 Main St" {...field('addressLine1')} />
         </Fieldset>
         <Fieldset label="City">
-          <Input placeholder="Austin" {...field('city')} />
+          <CityInput
+            value={form.city}
+            onChange={(v) => setForm((f) => ({ ...f, city: v }))}
+            onPick={(v) => {
+              // A chosen suggestion also carries state/country ("Austin,
+              // Texas" -> city+state+country together) — free-typed text
+              // that doesn't match that shape just sets the city, same as
+              // any other field's onBlur.
+              const parsed = parseLocationParts(v)
+              const next = parsed
+                ? {
+                    ...form,
+                    city: parsed.city,
+                    state: parsed.state || form.state,
+                    country: parsed.country || form.country,
+                  }
+                : { ...form, city: v.trim() }
+              setForm(next)
+              void commit(next)
+            }}
+          />
         </Fieldset>
         <Fieldset label="State / region">
           <Input placeholder="TX" {...field('state')} />
